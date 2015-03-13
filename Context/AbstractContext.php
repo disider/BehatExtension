@@ -6,7 +6,6 @@ use Behat\Behat\Event\BaseScenarioEvent;
 use Behat\Behat\Event\StepEvent;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
-use Behat\Mink\Exception\ElementHtmlException;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
@@ -286,6 +285,40 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Then /^I should see the "([^"]*)" rows:$/
+     */
+    public function iCanViewTheRows($row, TableNode $table)
+    {
+        foreach ($table->getHash() as $i => $values) {
+            $xpath = sprintf('//*[@class="%s"][position()=%d]', $row, $i + 1);
+
+            $element = $this->getSession()->getPage()->find('xpath', $xpath);
+
+            foreach ($values as $key => $value) {
+                $actual = $element->find('css', '.' . $key);
+                $message = sprintf(
+                    'The element ".%s" was not found in ".%s".',
+                    $key,
+                    $row
+                );
+                a::assertNotNull($actual, $message);
+
+                $html = $this->fixStepArgument($value);
+                $regex = '/'.preg_quote($actual->getHtml(), '/').'/ui';
+
+                $message = sprintf(
+                    'The string "%s" was not found in the HTML of the element matching ".%s .%s".',
+                    $html,
+                    $row,
+                    $key
+                );
+
+                a::assertThat($actual->getHtml(), a::equalTo($html), $message);
+            }
+        }
+    }
+
+    /**
      * @Given /^I should see the "([^"]*)" option "([^"]*)" selected$/
      */
     public function iShouldSeeTheOptionSelected($select, $option)
@@ -301,12 +334,12 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldSeeTheOptionsSelected($select, TableNode $table)
     {
-        $select = $this->formatField($select) . '[]';
+        $select = $this->formatField($select).'[]';
 
         $this->assertSelect($select);
 
-        foreach($table->getRows() as $options) {
-            foreach($options as $option) {
+        foreach ($table->getRows() as $options) {
+            foreach ($options as $option) {
                 $this->assertOptionSelected($select, $option);
             }
         }
