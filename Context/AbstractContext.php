@@ -8,52 +8,34 @@ use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
-use Doctrine\Common\DataFixtures\Purger\ORMPurger;
-use Doctrine\ORM\EntityManager;
+use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
 use PHPUnit_Framework_Assert as a;
 use PSS\Behat\Symfony2MockerExtension\Context\ServiceMockerAwareInterface;
-use PSS\Behat\Symfony2MockerExtension\ServiceMocker;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\DomCrawler\Crawler;
-use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
-use Symfony\Component\HttpKernel\KernelInterface;
 
 abstract class AbstractContext extends MinkContext implements KernelAwareInterface, ServiceMockerAwareInterface
 {
     use ContextTrait;
-
-    /** @var ServiceMocker */
-    private $mocker = null;
 
     /**
      * @var ConsoleOutput
      */
     protected $output;
 
+    /**
+     * @var string
+     */
+    private $filePath;
 
     public function __construct($parameters)
     {
         $this->debug = isset($parameters['debug']) ? $parameters['debug'] : true;
     }
 
-    public function setKernel(KernelInterface $kernel)
+    protected function setFilePath($path)
     {
-        $this->kernel = $kernel;
-    }
-
-    public function setServiceMocker(ServiceMocker $mocker)
-    {
-        $this->mocker = $mocker;
-    }
-
-    /** @BeforeScenario */
-    public function purgeDatabase()
-    {
-        /** @var EntityManager $entityManager */
-        $entityManager = $this->getContainer()->get('doctrine.orm.entity_manager');
-
-        $purger = new ORMPurger($entityManager);
-        $purger->purge();
+        $this->filePath = $path;
     }
 
     /**
@@ -84,7 +66,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
                 // finds the h1 and h2 tags and prints them only
                 $crawler = new Crawler($body);
                 foreach ($crawler->filter('h1, h2')->extract(array('_text')) as $header) {
-                    $this->printDebug(sprintf('        '.$header));
+                    $this->printDebug(sprintf('        ' . $header));
                 }
             } else {
                 $this->printDebug($body);
@@ -128,6 +110,13 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         $this->assertResponseStatusIsNot(200);
     }
 
+    public function assertPageAddress($page)
+    {
+        $page = $this->replacePlaceholders($page);
+
+        $this->assertSession()->addressEquals($this->locatePath($page));
+    }
+
     /**
      * @Then /^I should see an? "([^"]*)" error$/
      */
@@ -161,19 +150,19 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^I should see no "([^"]*)" menu$/
+     * @Given /^I should see the "([^"]*)" menu$/
      */
-    public function iSeeNoMenu($link)
+    public function iSeeTheMenu($menu)
     {
-        $this->assertElementNotOnPage('.main-menu a[href="/app_test.php'.$link.'"]');
+        $this->assertSession()->elementExists('xpath', sprintf('//a[contains(@href, "%s")]', $menu));
     }
 
     /**
-     * @Given /^I should see the "([^"]*)" menu$/
+     * @Then /^I should see no "([^"]*)" menu$/
      */
-    public function iSeeTheMenu($link)
+    public function iSeeNoMenu($menu)
     {
-        $this->assertElementOnPage('.main-menu a[href="/app_test.php'.$link.'"]');
+        $this->assertSession()->elementNotExists('xpath', sprintf('//a[contains(@href, "%s")]', $menu));
     }
 
     /**
@@ -198,7 +187,9 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iSeeLink($link)
     {
-        $this->assertElementOnPage('a[href="'.$link.'"]');
+        $link = $this->replacePlaceholders($link);
+
+        $this->assertSession()->elementExists('xpath', sprintf('//a[contains(@href, "%s")]', $link));
     }
 
     /**
@@ -206,23 +197,18 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iSeeNoLink($link)
     {
-        $this->assertElementNotOnPage('a[href="'.$link.'"]');
-    }
+        $link = $this->replacePlaceholders($link);
 
-    /**
-     * @Given /^there is a link to "([^"]*)"$/
-     */
-    public function thereIsALinkTo($link)
-    {
-        $this->assertElementContains('body', $link);
+        $this->assertSession()->elementNotExists('xpath', sprintf('//a[contains(@href, "%s")]', $link));
     }
-
 
     /**
      * @When /^I click the "([^"]*)" link$/
      */
     public function iClickTheLink($link)
     {
+        $link = $this->replacePlaceholders($link);
+
         $this->clickLink($link);
     }
 
@@ -280,7 +266,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
                 a::assertNotNull($actual, $message);
 
                 $html = $this->fixStepArgument($value);
-                $regex = '/'.preg_quote($actual->getHtml(), '/').'/ui';
+                $regex = '/' . preg_quote($html, '/') . '/ui';
 
                 $message = sprintf(
                     'The string "%s" was not found in the HTML of the element matching ".%s .%s".',
@@ -289,7 +275,9 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
                     $key
                 );
 
-                a::assertThat($actual->getHtml(), a::equalTo($html), $message);
+                if (!preg_match($regex, $actual->getHtml())) {
+                    throw new \InvalidArgumentException($message);
+                }
             }
         }
     }
@@ -310,7 +298,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldSeeTheOptionsSelected($select, TableNode $table)
     {
-        $select = $this->formatField($select).'[]';
+        $select = $this->formatField($select) . '[]';
 
         $this->assertSelect($select);
 
@@ -337,7 +325,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iCanClickOn($title)
     {
-        $this->assertElementOnPage('a[title~="'.$title.'"]');
+        $this->assertElementOnPage('a[title~="' . $title . '"]');
     }
 
     /**
@@ -431,7 +419,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iSelectTheOptions($field, TableNode $table)
     {
-        $select = $this->formatField($field).'[]';
+        $select = $this->formatField($field) . '[]';
 
         foreach ($table->getRows() as $options) {
             foreach ($options as $option) {
@@ -445,7 +433,22 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Given /^the "([^"]*)" field should contain "([^"]*)"$/
+     * @Given /^I upload "([^"]*)" in the "([^"]*)" field$/
+     */
+    public function iUploadInTheField($fileName, $field)
+    {
+        if (!$this->filePath)
+            throw new InvalidArgumentException('Base file path not set. Call AbstractContext::setFilePath() with a valid file path.');
+
+        $filePath = $this->filePath . DIRECTORY_SEPARATOR . $fileName;
+        if (!is_file($filePath))
+            throw new InvalidArgumentException(sprintf('File not found in %s', $filePath));
+
+        $this->attachFileToField($field, $filePath);
+    }
+
+    /**
+     * @Given /^the "([^"]*)" field should equal "([^"]*)"$/
      */
     public function theFieldInFormContains($field, $value)
     {
@@ -511,13 +514,13 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
                 throw new \InvalidArgumentException(sprintf('Could not evaluate XPath: "%s"', $xpath));
             }
         } else {
-            $element = $this->assertSession()->elementExists('css', '.'.$section);
+            $element = $this->assertSession()->elementExists('css', '.' . $section);
         }
 
         foreach ($values as $key => $value) {
             $actual = $element->getHtml();
             $html = $this->fixStepArgument($value);
-            $regex = '/'.preg_quote($html, '/').'/ui';
+            $regex = '/' . preg_quote($html, '/') . '/ui';
 
             if (!preg_match($regex, $actual)) {
                 $message = sprintf(
@@ -554,7 +557,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         array_shift($vars);
 
         foreach ($vars as $var) {
-            $field .= '['.$var.']';
+            $field .= '[' . $var . ']';
         }
 
         return $field;

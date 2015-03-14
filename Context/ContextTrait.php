@@ -2,9 +2,10 @@
 
 namespace Diside\BehatExtension\Context;
 
-use AppBundle\Entity\Repository\EntityRepository;
-use AppBundle\Features\Context\Helper\EntityLookup;
+use Doctrine\Common\DataFixtures\Purger\ORMPurger;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityRepository;
+use PSS\Behat\Symfony2MockerExtension\ServiceMocker;
 use Symfony\Component\ExpressionLanguage\SyntaxError;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Security\Core\Authorization\ExpressionLanguage;
@@ -14,13 +15,37 @@ trait ContextTrait
     /** @var KernelInterface */
     protected $kernel;
 
+    /** @var ServiceMocker */
+    private $mocker = null;
+
+    /** @BeforeScenario */
+    public function purgeDatabase()
+    {
+        /** @var EntityManager $entityManager */
+        $entityManager = $this->getContainer()->get('doctrine.orm.entity_manager');
+
+        $purger = new ORMPurger($entityManager);
+        $purger->purge();
+    }
+
+    public function setServiceMocker(ServiceMocker $mocker)
+    {
+        $this->mocker = $mocker;
+    }
+
+    protected function getContainer()
+    {
+        return $this->kernel->getContainer();
+    }
+
     /** @return EntityRepository */
     protected function getRepository($name)
     {
         return $this->get('doctrine.orm.entity_manager')->getRepository($name);
     }
 
-    protected function get($serviceName) {
+    protected function get($serviceName)
+    {
         return $this->kernel->getContainer()->get($serviceName);
     }
 
