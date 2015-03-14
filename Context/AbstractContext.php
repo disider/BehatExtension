@@ -512,6 +512,14 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Then /^I should see (\d+) "([^"]*)"$/
+     */
+    public function iSee2($number, $class)
+    {
+        $this->assertNumElements($number, '.' . $class);
+    }
+
+    /**
      * @Given /^dump element "([^"]*)"$/
      */
     public function iDumpElement($element)
