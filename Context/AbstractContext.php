@@ -129,7 +129,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^I see an? "([^"]*)" error$/
+     * @Then /^I should see an? "([^"]*)" error$/
      */
     public function iSeeError($error)
     {
@@ -137,7 +137,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^I see an? "([^"]*)" error with class "([^"]*)"$/
+     * @Then /^I should see an? "([^"]*)" error with class "([^"]*)"$/
      */
     public function iSeeErrorWithClass($error, $class)
     {
@@ -145,7 +145,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^I see a "([^"]*)" global error$/
+     * @Then /^I should see a "([^"]*)" global error$/
      */
     public function iSeeGlobalError($error)
     {
@@ -153,15 +153,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Given /^I see "([^"]*)"$/
-     */
-    public function iSee($text)
-    {
-        $this->assertPageContainsText($text);
-    }
-
-    /**
-     * @Given /^I see no "([^"]*)"$/
+     * @Given /^I should see no "([^"]*)"$/
      */
     public function iSeeNo($text)
     {
@@ -169,7 +161,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^I see no "([^"]*)" menu$/
+     * @Then /^I should see no "([^"]*)" menu$/
      */
     public function iSeeNoMenu($link)
     {
@@ -177,7 +169,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Given /^I see the "([^"]*)" menu$/
+     * @Given /^I should see the "([^"]*)" menu$/
      */
     public function iSeeTheMenu($link)
     {
@@ -185,8 +177,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^I see (\d+) link with class "([^"]*)"?$/
-     * @Then /^I see (\d+) links with class "([^"]*)"?$/
+     * @Then /^I should see (\d+) link with class "([^"]*)"?$/
+     * @Then /^I should see (\d+) links with class "([^"]*)"?$/
      */
     public function iSeeLinksWithClass($num, $class)
     {
@@ -194,7 +186,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^I see no links with class "([^"]*)"?$/
+     * @Then /^I should see no links with class "([^"]*)"?$/
      */
     public function iSeeNoLinksWithClass($class)
     {
@@ -202,7 +194,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Given /^I see the "([^"]*)" link$/
+     * @Given /^I should see the "([^"]*)" link$/
      */
     public function iSeeLink($link)
     {
@@ -210,19 +202,11 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^I see no "([^"]*)" link$/
+     * @Then /^I should see no "([^"]*)" link$/
      */
     public function iSeeNoLink($link)
     {
         $this->assertElementNotOnPage('a[href="'.$link.'"]');
-    }
-
-    /**
-     * @Then /^I can click on "([^"]*)"$/
-     */
-    public function iCanClickOn($title)
-    {
-        $this->assertElementOnPage('a[title~="'.$title.'"]');
     }
 
     /**
@@ -243,7 +227,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^the page contains$/
+     * @Then /^the page should contain$/
      */
     public function thePageContains(PyStringNode $text)
     {
@@ -251,15 +235,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Given /^there is no "([^"]*)" element$/
-     */
-    public function thereIsNoElement($element)
-    {
-        $this->assertElementNotOnPage($element);
-    }
-
-    /**
-     * @Given /^there is no "([^"]*)" field$/
+     * @Then /^there should be no "([^"]*)" field$/
      */
     public function thereIsNoField($field)
     {
@@ -357,11 +333,11 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^I see the "([^"]*)" element (\d+) times$/
+     * @Then /^I can click on "([^"]*)"$/
      */
-    public function iSeeElementTimes($field, $number)
+    public function iCanClickOn($title)
     {
-        $this->assertNumElements($number, $field);
+        $this->assertElementOnPage('a[title~="'.$title.'"]');
     }
 
     /**
@@ -469,16 +445,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @When /^I search for "([^"]*)"$/
-     */
-    public function iSearchFor($query)
-    {
-        $this->fillField('search[query]', $query);
-        $this->pressButton("search-btn");
-    }
-
-    /**
-     * @Given /^the "([^"]*)" field contains "([^"]*)"$/
+     * @Given /^the "([^"]*)" field should contain "([^"]*)"$/
      */
     public function theFieldInFormContains($field, $value)
     {
@@ -498,7 +465,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^the response headers contains:$/
+     * @Then /^there should be response headers with:$/
      */
     public function theResponseHeadersContains(TableNode $table)
     {
@@ -514,7 +481,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     /**
      * @Then /^I should see (\d+) "([^"]*)"$/
      */
-    public function iSee2($number, $class)
+    public function iSeeElements($number, $class)
     {
         $this->assertNumElements($number, '.' . $class);
     }
