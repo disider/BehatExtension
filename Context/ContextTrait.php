@@ -59,6 +59,16 @@ trait ContextTrait
         return $this->hasValue($values, $key) ? $values[$key] : $default;
     }
 
+    protected function getBoolValue(array $values, $key, $default = true)
+    {
+        return $this->hasValue($values, $key) ? $values[$key] == "true" : $default;
+    }
+
+    protected function getDateValue(array $values, $key, $default = '')
+    {
+        return new \DateTime($this->hasValue($values, $key) ? $values[$key] : $default);
+    }
+
     protected function hasValue(array $values, $key)
     {
         return isset($values[$key]);

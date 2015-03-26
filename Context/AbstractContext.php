@@ -78,10 +78,10 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     /**
      * @When /^I visit "([^"]*)"$/
      */
-    public function iVisit($page)
+    public function visit($page)
     {
         $page = $this->replacePlaceholders($page);
-        $this->visit($page);
+        parent::visit($page);
 
 //        if($this->getSession()->getStatusCode() != 200)
 //            $this->printLastResponse();
@@ -94,7 +94,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iDebug($page)
     {
-        $this->visit($page);
+        parent::visit($page);
 
         $this->printLastResponse();
     }
@@ -106,7 +106,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $page = $this->replacePlaceholders($page);
 
-        $this->visit($page);
+        parent::visit($page);
+
         $this->assertResponseStatusIsNot(200);
     }
 
@@ -505,12 +506,37 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Then /^I should see the "([^"]*)" details2:$/
+     */
+    public function iCanViewTheDetails2($section, TableNode $table)
+    {
+        foreach ($table->getHash() as $values) {
+            $this->assertDetailExists($section, $values);
+        }
+    }
+
+    /**
      * @Then /^I should see the "([^"]*)" details:$/
      */
     public function iCanViewTheDetails($section, TableNode $table)
     {
-        foreach ($table->getHash() as $values) {
-            $this->assertDetailExists($section, $values);
+        foreach ($table->getRowsHash() as $field => $value) {
+            $selector = sprintf('.%s .%s', $section, $field);
+
+            $element = $this->assertSession()->elementExists('css', $selector);
+            $actual = $element->getHtml();
+            $regex = '/'.preg_quote($value, '/').'/ui';
+
+            if (!preg_match($regex, $actual)) {
+                $message = sprintf(
+                    'The string "%s" was not found in the HTML of the element matching %s "%s" (found "%s").',
+                    $value,
+                    'css',
+                    $selector,
+                    trim($actual)
+                );
+                throw new \InvalidArgumentException($message);
+            }
         }
     }
 
@@ -566,9 +592,10 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
             if (!preg_match($regex, $actual)) {
                 $message = sprintf(
-                    'The string "%s" was not found in the HTML of the element matching %s "%s".',
-                    $html,
-                    $section
+                    'The string "%s" was not found in the "%s" HTML element (found "%s").',
+                    $value,
+                    $key,
+                    $html
                 );
                 throw new \InvalidArgumentException($message);
             }
