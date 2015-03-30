@@ -6,6 +6,7 @@ use Behat\Behat\Event\BaseScenarioEvent;
 use Behat\Behat\Event\StepEvent;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
+use Behat\Mink\Exception\ExpectationException;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
 use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
@@ -219,6 +220,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
     /**
      * @When /^I click the "([^"]*)" link$/
+     * @When /^I click on "([^"]*)"$/
      */
     public function iClickTheLink($link)
     {
@@ -260,6 +262,19 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Then /^I should see the "([^"]*)" form errors:$/
+     */
+    public function iShouldSeeTheFormErrors($form, TableNode $table)
+    {
+        foreach ($table->getRowsHash() as $field => $value) {
+            $field = str_replace('.', '_', $field);
+
+            $element = sprintf('div.has-error #%s_%s + ul', $form, $field);
+            $this->assertElementContains($element, $value);
+        }
+    }
+
+    /**
      * @Then /^I should see the "([^"]*)" form:$/
      */
     public function iShouldSeeTheForm($form, TableNode $table)
@@ -291,6 +306,14 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
                 $this->assertRowElementContainsText($row, $value, $key, $actual);
             }
         }
+    }
+
+    /**
+     * @Then /^I should see no "([^"]*)" rows$/
+     */
+    public function iShouldSeeNoRows($row)
+    {
+        $this->assertElementNotOnPage($row);
     }
 
     /**
@@ -365,38 +388,37 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
     /**
      * @Then /^I can click on "([^"]*)"$/
-     */
-    public function iCanClickOn($title)
-    {
-        $this->assertElementOnPage('a[title~="'.$title.'"]');
-    }
-
-    /**
      * @Then /^I can press "([^"]*)"$/
      */
-    public function iCanPress($button)
+    public function iCanClickOn($linkOrButton)
     {
         $this->assertSession()->elementExists(
             'named',
             array(
-                'button',
-                $this->getSession()->getSelectorsHandler()->xpathLiteral($button)
+                'link_or_button',
+                $this->getSession()->getSelectorsHandler()->xpathLiteral($linkOrButton)
             )
         );
     }
 
     /**
+     * @Then /^I cannot click on "([^"]*)"$/
      * @Then /^I cannot press "([^"]*)"$/
      */
-    public function iCannotPress($button)
+    public function iCannotPress($linkOrButton)
     {
-        $this->assertSession()->elementNotExists(
+        $element = $this->getSession()->getPage()->find(
             'named',
             array(
-                'button',
-                $this->getSession()->getSelectorsHandler()->xpathLiteral($button)
+                'link_or_button',
+                $this->getSession()->getSelectorsHandler()->xpathLiteral($linkOrButton)
             )
         );
+
+        if (null !== $element) {
+            $message = sprintf('An element matching "%s" appears on this page, but it should not.', $linkOrButton);
+            throw new InvalidArgumentException($message);
+        }
     }
 
     /**
@@ -458,6 +480,15 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
         $this->uncheckOption($field);
     }
+
+    /**
+     * @Given /^I check the "([^"]*)" radio button with "([^"]*)" value$/
+     */
+    public function iCheckTheRadioButton($element, $value)
+    {
+        $this->getSession()->getPage()->selectFieldOption($element, $value);
+    }
+
 
     /**
      * @Given /^I select the "([^"]*)" option "([^"]*)"$/
@@ -537,20 +568,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         foreach ($table->getRowsHash() as $field => $value) {
             $selector = sprintf('.%s .%s', $section, $field);
 
-            $element = $this->assertSession()->elementExists('css', $selector);
-            $actual = $element->getHtml();
-            $regex = '/'.preg_quote($value, '/').'/ui';
-
-            if (!preg_match($regex, $actual)) {
-                $message = sprintf(
-                    'The string "%s" was not found in the HTML of the element matching %s "%s" (found "%s").',
-                    $value,
-                    'css',
-                    $selector,
-                    trim($actual)
-                );
-                throw new \InvalidArgumentException($message);
-            }
+            $this->assertElementContains($selector, $value);
         }
     }
 
@@ -724,5 +742,23 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         a::assertNotNull($actual, $message);
 
         return $actual;
+    }
+
+    public function assertElementContains($selector, $value)
+    {
+        $element = $this->assertSession()->elementExists('css', $selector);
+        $actual = $element->getHtml();
+        $regex = '/'.preg_quote($value, '/').'/ui';
+
+        if (!preg_match($regex, $actual)) {
+            $message = sprintf(
+                'The string "%s" was not found in the HTML of the element matching %s "%s" (found "%s").',
+                $value,
+                'css',
+                $selector,
+                trim($actual)
+            );
+            throw new \InvalidArgumentException($message);
+        }
     }
 }

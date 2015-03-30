@@ -59,6 +59,11 @@ trait ContextTrait
         return $this->hasValue($values, $key) ? $values[$key] : $default;
     }
 
+    protected function getFloatValue(array $values, $key, $default = true)
+    {
+        return ($this->hasValue($values, $key) && is_numeric($values[$key])) ? floatval($values[$key]) : $default;
+    }
+
     protected function getBoolValue(array $values, $key, $default = true)
     {
         return $this->hasValue($values, $key) ? $values[$key] == "true" : $default;
