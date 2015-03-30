@@ -109,7 +109,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iDebug($page)
     {
-        parent::visit($page);
+        $this->visit($page);
 
         $this->printLastResponse();
     }
@@ -119,9 +119,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iTryToVisit($page)
     {
-        $page = $this->replacePlaceholders($page);
-
-        parent::visit($page);
+        $this->visit($page);
 
         $this->assertResponseStatusIsNot(200);
     }
