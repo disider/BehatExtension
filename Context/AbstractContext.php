@@ -6,7 +6,6 @@ use Behat\Behat\Event\BaseScenarioEvent;
 use Behat\Behat\Event\StepEvent;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
-use Behat\Mink\Exception\ExpectationException;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
 use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
@@ -508,6 +507,71 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Then /^I should see the "([^"]*)" field (disabled)$/
+     */
+    public function iSeeTheFieldStatus($field, $status)
+    {
+        $element = $this->findField($field);
+
+        if (!$element->hasAttribute($status)) {
+            $message = sprintf('The field "%s" has no attribute "%s"', $field, $status);
+            throw new InvalidArgumentException($message);
+        }
+    }
+
+    /**
+     * @Then /^I should see the "([^"]*)" option "([^"]*)" (disabled)$/
+     */
+    public function iSeeTheOptionStatus($field, $option, $status)
+    {
+        $element = $this->findOption($field, $option);
+
+        if (!$element->hasAttribute($status)) {
+            $message = sprintf('The option "%s" within "%s" has no attribute "%s"', $option, $field, $status);
+            throw new InvalidArgumentException($message);
+        }
+    }
+
+    /**
+     * @Then /^I should not see the "([^"]*)" option "([^"]*)" (disabled)$/
+     */
+    public function iSeeNoOptionStatus($field, $option, $status)
+    {
+        $element = $this->findOption($field, $option);
+
+        if ($element->hasAttribute($status)) {
+            $message = sprintf(
+                'The option "%s" within "%s" has attribute "%s", but it should not',
+                $option,
+                $field,
+                $status
+            );
+            throw new InvalidArgumentException($message);
+        }
+    }
+
+    /**
+     * @Then /^I can select the "([^"]*)" option "([^"]*)"$/
+     */
+    public function iCanSelectTheOption($field, $option)
+    {
+        $this->findOption($field, $option);
+    }
+
+    /**
+     * @Then /^I should not see the "([^"]*)" field (disabled)$/
+     */
+    public function iSeeNoFieldStatus($field, $status)
+    {
+        $element = $this->findField($field);
+
+        if ($element->hasAttribute($status)) {
+            $message = sprintf('The field "%s" has an attribute "%s", but is should not.', $field, $status);
+            throw new InvalidArgumentException($message);
+        }
+    }
+
+    /**
      * @Given /^I upload "([^"]*)" in the "([^"]*)" field$/
      */
     public function iUploadInTheField($fileName, $field)
@@ -711,12 +775,6 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         return $message;
     }
 
-    /**
-     * @param $row
-     * @param $element
-     * @param $key
-     * @return mixed
-     */
     protected function findElementInRowByClass($row, $element, $key)
     {
         $actual = $element->find('css', '.'.$key);
@@ -746,5 +804,47 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
             );
             throw new \InvalidArgumentException($message);
         }
+    }
+
+    private function findField($field)
+    {
+        $field = $this->formatField($field);
+
+        $element = $this->getSession()->getPage()->findField($field);
+
+        if (!$element) {
+            $message = sprintf('The field "%s" does not exist', $field);
+            throw new InvalidArgumentException($message);
+        }
+
+        return $element;
+    }
+
+    private function findFields($field)
+    {
+        $field = $this->formatField($field);
+
+        $elements = $this->getSession()->getPage()->findAll('named', array('field', $field));
+
+        if (count($elements) == 0) {
+            $message = sprintf('No "%s" fields exist', $field);
+            throw new InvalidArgumentException($message);
+        }
+
+        return $elements;
+    }
+
+    private function findOption($field, $option)
+    {
+        $elements = $this->findFields($field);
+
+        foreach ($elements as $element) {
+            if ($element->getAttribute('value') == $option) {
+                return $element;
+            }
+        }
+
+        $message = sprintf('The option "%s" within "%s" does not exist', $option, $field);
+        throw new InvalidArgumentException($message);
     }
 }
