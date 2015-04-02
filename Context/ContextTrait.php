@@ -8,7 +8,7 @@ use Doctrine\ORM\EntityRepository;
 use PSS\Behat\Symfony2MockerExtension\ServiceMocker;
 use Symfony\Component\ExpressionLanguage\SyntaxError;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Security\Core\Authorization\ExpressionLanguage;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 trait ContextTrait
 {
@@ -81,7 +81,7 @@ trait ContextTrait
 
     protected function replacePlaceholders($text)
     {
-        $language = new ExpressionLanguage();
+        $language = $this->getExpressionLanguage();
 
         $variables = $this->getEntityLookupTables();
 
@@ -109,5 +109,6 @@ trait ContextTrait
     }
 
     protected abstract function getEntityLookupTables();
+    protected abstract function getExpressionLanguage();
 
 }

@@ -11,6 +11,7 @@ use Behat\Symfony2Extension\Context\KernelAwareInterface;
 use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
 use PHPUnit_Framework_Assert as a;
 use PSS\Behat\Symfony2MockerExtension\Context\ServiceMockerAwareInterface;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -36,6 +37,11 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     protected function setFilePath($path)
     {
         $this->filePath = $path;
+    }
+
+    protected function getExpressionLanguage()
+    {
+        return new ExpressionLanguage();
     }
 
     /**
@@ -76,12 +82,20 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
 
     /**
-     * @When /^I visit "([^"]*)"$/
+     * @Override
      */
     public function visit($page)
     {
         $page = $this->replacePlaceholders($page);
         parent::visit($page);
+    }
+
+    /**
+     * @When /^I visit "([^"]*)"$/
+     */
+    public function iVisit($page)
+    {
+        $this->visit($page);
 
 //        if($this->getSession()->getStatusCode() != 200)
 //            $this->printLastResponse();
@@ -94,7 +108,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iDebug($page)
     {
-        parent::visit($page);
+        $this->visit($page);
 
         $this->printLastResponse();
     }
@@ -104,9 +118,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iTryToVisit($page)
     {
-        $page = $this->replacePlaceholders($page);
-
-        parent::visit($page);
+        $this->visit($page);
 
         $this->assertResponseStatusIsNot(200);
     }
