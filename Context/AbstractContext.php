@@ -72,7 +72,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
                 // finds the h1 and h2 tags and prints them only
                 $crawler = new Crawler($body);
                 foreach ($crawler->filter('h1, h2')->extract(array('_text')) as $header) {
-                    $this->printDebug(sprintf('        '.$header));
+                    $this->printDebug('        '. $header);
                 }
             } else {
                 $this->printDebug($body);
@@ -300,7 +300,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
             foreach ($values as $key => $value) {
                 $actual = $this->findElementInRowByClass($row, $element, $key);
 
-                $this->assertRowElementContainsText($row, $value, $key, $actual);
+                $this->assertRowElementContainsText($i, $row, $key, $value, $actual);
             }
         }
     }
@@ -767,17 +767,19 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         return $element;
     }
 
-    protected function assertRowElementContainsText($row, $value, $key, $actual)
+    protected function assertRowElementContainsText($position, $row, $key, $value, $actual)
     {
         $value = $this->fixStepArgument($value);
 
         $regex = '/'.preg_quote($value, '/').'/ui';
 
         $message = sprintf(
-            'The string "%s" was not found in the HTML of the element matching ".%s .%s".',
+            'The string "%s" was not found in the HTML of the row "%d" matching ".%s .%s", found "%s"',
             $value,
+            $position,
             $row,
-            $key
+            $key,
+            $actual->getHtml()
         );
 
         if (!preg_match($regex, $actual->getHtml())) {
