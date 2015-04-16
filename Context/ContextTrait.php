@@ -8,7 +8,7 @@ use Doctrine\ORM\EntityRepository;
 use PSS\Behat\Symfony2MockerExtension\ServiceMocker;
 use Symfony\Component\ExpressionLanguage\SyntaxError;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Security\Core\Authorization\ExpressionLanguage;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 trait ContextTrait
 {
@@ -64,6 +64,21 @@ trait ContextTrait
         return $this->getValue($values, $field, $default);
     }
 
+    protected function getFloatValue(array $values, $key, $default = true)
+    {
+        return ($this->hasValue($values, $key) && is_numeric($values[$key])) ? floatval($values[$key]) : $default;
+    }
+
+    protected function getBoolValue(array $values, $key, $default = true)
+    {
+        return $this->hasValue($values, $key) ? $values[$key] == "true" : $default;
+    }
+
+    protected function getDateValue(array $values, $key, $default = '')
+    {
+        return new \DateTime($this->hasValue($values, $key) ? $values[$key] : $default);
+    }
+
     protected function hasValue(array $values, $key)
     {
         return isset($values[$key]);
@@ -71,7 +86,7 @@ trait ContextTrait
 
     protected function replacePlaceholders($text)
     {
-        $language = new ExpressionLanguage();
+        $language = $this->getExpressionLanguage();
 
         $variables = $this->getEntityLookupTables();
 
@@ -99,5 +114,6 @@ trait ContextTrait
     }
 
     protected abstract function getEntityLookupTables();
+    protected abstract function getExpressionLanguage();
 
 }
