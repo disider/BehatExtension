@@ -6,9 +6,11 @@ use Behat\Behat\Event\BaseScenarioEvent;
 use Behat\Behat\Event\StepEvent;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
+use Behat\Mink\Element\NodeElement;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
 use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
+use Doctrine\Common\Util\Debug;
 use PHPUnit_Framework_Assert as a;
 use PSS\Behat\Symfony2MockerExtension\Context\ServiceMockerAwareInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -265,10 +267,13 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldSeeRows($row, TableNode $table)
     {
-        foreach ($table->getHash() as $i => $values) {
-            $xpath = sprintf('//*[@class="%s"][position()=%d]', $row, $i + 1);
+        $xpath = sprintf('//*[contains(@class, "%s")]', $row);
+        $rows = $this->getSession()->getPage()->findAll('xpath', $xpath);
 
-            $element = $this->findElementInRow($row, $xpath, $i);
+        a::assertThat(count($rows), a::greaterThanOrEqual(count($table->getHash())));
+
+        foreach ($table->getHash() as $i => $values) {
+            $element = $rows[$i];
 
             foreach ($values as $key => $value) {
                 $actual = $this->findElementInRowByClass($row, $element, $key);
@@ -283,7 +288,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldCountRows($number, $row)
     {
-        $xpath = sprintf('//*[@class="%s"]', $row);
+        $xpath = sprintf('//*[contains(@class, "%s")]', $row);
 
         $elements = $this->getSession()->getPage()->find('xpath', $xpath);
 
@@ -432,6 +437,23 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         $field = $this->formatField($field);
 
         $this->checkOption($field);
+    }
+
+    /**
+     * @Given /^I check the "([^"]*)" fields:$/
+     */
+    public function iCheckTheFields($field, TableNode $table)
+    {
+        foreach ($table->getRows() as $options) {
+            foreach($options as $option) {
+                $checkbox = $this->getSession()->getPage()->findField($option);
+
+                if(!$checkbox)
+                    throw new InvalidArgumentException(sprintf('Checkbox "%s" with label "%s" not found', $field, $option));
+
+                $checkbox->check();
+            }
+        }
     }
 
     /**
@@ -646,33 +668,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         return $element;
     }
 
-    protected function assertRowElementContainsText($row, $value, $key, $actual)
-    {
-        $value = $this->fixStepArgument($value);
-
-        $regex = '/'.preg_quote($value, '/').'/ui';
-
-        $message = sprintf(
-            'The string "%s" was not found in the HTML of the element matching ".%s .%s".',
-            $value,
-            $row,
-            $key
-        );
-
-        if (!preg_match($regex, $actual->getHtml())) {
-            throw new \InvalidArgumentException($message);
-        }
-
-        return $message;
-    }
-
-    /**
-     * @param $row
-     * @param $element
-     * @param $key
-     * @return mixed
-     */
-    protected function findElementInRowByClass($row, $element, $key)
+    protected function findElementInRowByClass($row, NodeElement $element, $key)
     {
         $actual = $element->find('css', '.'.$key);
         $message = sprintf(
@@ -683,5 +679,26 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         a::assertNotNull($actual, $message);
 
         return $actual;
+    }
+
+    protected function assertRowElementContainsText($row, $value, $key, NodeElement $actual)
+    {
+        $value = $this->fixStepArgument($value);
+
+        $regex = '/'.preg_quote($value, '/').'/ui';
+
+        $message = sprintf(
+            'The string "%s" was not found in the HTML of the element matching ".%s .%s", found "%s"',
+            $value,
+            $row,
+            $key,
+            $actual->getOuterHtml()
+        );
+
+        if (!preg_match($regex, $actual->getHtml())) {
+            throw new \InvalidArgumentException($message);
+        }
+
+        return $message;
     }
 }

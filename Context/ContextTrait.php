@@ -59,6 +59,11 @@ trait ContextTrait
         return $this->hasValue($values, $key) ? $values[$key] : $default;
     }
 
+    protected function getIntValue($values, $field, $default = 0)
+    {
+        return $this->getValue($values, $field, $default);
+    }
+
     protected function hasValue(array $values, $key)
     {
         return isset($values[$key]);
