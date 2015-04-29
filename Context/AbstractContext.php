@@ -261,6 +261,21 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Then /^I should not see the "([^"]*)" fields:$/
+     */
+    public function iShouldNotSeeTheFormFields($form, TableNode $table)
+    {
+        foreach ($table->getRows() as $fields) {
+            foreach ($fields as $field) {
+                $field = $this->formatField(sprintf('%s.%s', $form, $field));
+                $field = $this->replacePlaceholders($field);
+
+                $this->assertElementNotOnPage($field);
+            }
+        }
+    }
+
+    /**
      * @Then /^I should see the "([^"]*)" form errors:$/
      */
     public function iShouldSeeTheFormErrors($form, TableNode $table)
@@ -297,7 +312,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         $xpath = sprintf('//*[contains(@class, "%s")]', $row);
         $rows = $this->getSession()->getPage()->findAll('xpath', $xpath);
 
-        a::assertThat(count($rows), a::greaterThanOrEqual(count($table->getHash())));
+        a::assertThat(count($rows), a::greaterThanOrEqual(count($table->getHash())), sprintf('Not enough "%s" rows found.', $row));
 
         foreach ($table->getHash() as $i => $values) {
             $element = $rows[$i];
@@ -805,6 +820,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     protected function assertRowElementContainsText($position, $row, $key, $value, NodeElement $actual)
     {
         $value = $this->fixStepArgument($value);
+        $value = $this->replacePlaceholders($value);
 
         $regex = '/'.preg_quote($value, '/').'/ui';
 
