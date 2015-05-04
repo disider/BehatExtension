@@ -294,7 +294,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldSeeRows($row, TableNode $table)
     {
-        $xpath = sprintf('//*[contains(@class, "%s")]', $row);
+        $xpath = sprintf('//*[contains(concat(" ", normalize-space(@class), " "), " %s ")]', $row);
         $rows = $this->getSession()->getPage()->findAll('xpath', $xpath);
 
         a::assertThat(count($rows), a::greaterThanOrEqual(count($table->getHash())));
