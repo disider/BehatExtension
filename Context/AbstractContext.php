@@ -6,10 +6,11 @@ use Behat\Behat\Event\BaseScenarioEvent;
 use Behat\Behat\Event\StepEvent;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
-use Behat\Mink\Exception\ExpectationException;
+use Behat\Mink\Element\NodeElement;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
 use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
+use Doctrine\Common\Util\Debug;
 use PHPUnit_Framework_Assert as a;
 use PSS\Behat\Symfony2MockerExtension\Context\ServiceMockerAwareInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
@@ -73,7 +74,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
                 // finds the h1 and h2 tags and prints them only
                 $crawler = new Crawler($body);
                 foreach ($crawler->filter('h1, h2')->extract(array('_text')) as $header) {
-                    $this->printDebug(sprintf('        '.$header));
+                    $this->printDebug('        '. $header);
                 }
             } else {
                 $this->printDebug($body);
@@ -260,6 +261,21 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Then /^I should not see the "([^"]*)" fields:$/
+     */
+    public function iShouldNotSeeTheFormFields($form, TableNode $table)
+    {
+        foreach ($table->getRows() as $fields) {
+            foreach ($fields as $field) {
+                $field = $this->formatField(sprintf('%s.%s', $form, $field));
+                $field = $this->replacePlaceholders($field);
+
+                $this->assertElementNotOnPage($field);
+            }
+        }
+    }
+
+    /**
      * @Then /^I should see the "([^"]*)" form errors:$/
      */
     public function iShouldSeeTheFormErrors($form, TableNode $table)
@@ -293,15 +309,18 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldSeeRows($row, TableNode $table)
     {
-        foreach ($table->getHash() as $i => $values) {
-            $xpath = sprintf('//*[contains(concat(" ", normalize-space(@class), " "), " %s ")][position()=%d]', $row, $i + 1);
+        $xpath = sprintf('//*[contains(concat(" ", normalize-space(@class), " "), " %s ")]', $row);
+        $rows = $this->getSession()->getPage()->findAll('xpath', $xpath);
 
-            $element = $this->findElementInRow($row, $xpath, $i);
+        a::assertThat(count($rows), a::greaterThanOrEqual(count($table->getHash())), sprintf('Not enough "%s" rows found.', $row));
+
+        foreach ($table->getHash() as $i => $values) {
+            $element = $rows[$i];
 
             foreach ($values as $key => $value) {
                 $actual = $this->findElementInRowByClass($row, $element, $key);
 
-                $this->assertRowElementContainsText($row, $value, $key, $actual);
+                $this->assertRowElementContainsText($i, $row, $key, $value, $actual);
             }
         }
     }
@@ -470,6 +489,23 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Given /^I check the "([^"]*)" fields:$/
+     */
+    public function iCheckTheFields($field, TableNode $table)
+    {
+        foreach ($table->getRows() as $options) {
+            foreach($options as $option) {
+                $checkbox = $this->getSession()->getPage()->findField($option);
+
+                if(!$checkbox)
+                    throw new InvalidArgumentException(sprintf('Checkbox "%s" with label "%s" not found', $field, $option));
+
+                $checkbox->check();
+            }
+        }
+    }
+
+    /**
      * @Given /^I uncheck the "([^"]*)" field$/
      */
     public function iUncheckTheField($field)
@@ -516,6 +552,71 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
                 $option = $this->fixStepArgument($option);
                 $this->getSession()->getPage()->selectFieldOption($select, $option, true);
             }
+        }
+    }
+
+    /**
+     * @Then /^I should see the "([^"]*)" field (disabled)$/
+     */
+    public function iSeeTheFieldStatus($field, $status)
+    {
+        $element = $this->findField($field);
+
+        if (!$element->hasAttribute($status)) {
+            $message = sprintf('The field "%s" has no attribute "%s"', $field, $status);
+            throw new InvalidArgumentException($message);
+        }
+    }
+
+    /**
+     * @Then /^I should see the "([^"]*)" option "([^"]*)" (disabled)$/
+     */
+    public function iSeeTheOptionStatus($field, $option, $status)
+    {
+        $element = $this->findOption($field, $option);
+
+        if (!$element->hasAttribute($status)) {
+            $message = sprintf('The option "%s" within "%s" has no attribute "%s"', $option, $field, $status);
+            throw new InvalidArgumentException($message);
+        }
+    }
+
+    /**
+     * @Then /^I should not see the "([^"]*)" option "([^"]*)" (disabled)$/
+     */
+    public function iSeeNoOptionStatus($field, $option, $status)
+    {
+        $element = $this->findOption($field, $option);
+
+        if ($element->hasAttribute($status)) {
+            $message = sprintf(
+                'The option "%s" within "%s" has attribute "%s", but it should not',
+                $option,
+                $field,
+                $status
+            );
+            throw new InvalidArgumentException($message);
+        }
+    }
+
+    /**
+     * @Then /^I can select the "([^"]*)" option "([^"]*)"$/
+     */
+    public function iCanSelectTheOption($field, $option)
+    {
+        $this->findOption($field, $option);
+    }
+
+    /**
+     * @Then /^I should not see the "([^"]*)" field (disabled)$/
+     */
+    public function iSeeNoFieldStatus($field, $status)
+    {
+        $element = $this->findField($field);
+
+        if ($element->hasAttribute($status)) {
+            $message = sprintf('The field "%s" has an attribute "%s", but is should not.', $field, $status);
+            throw new InvalidArgumentException($message);
         }
     }
 
@@ -703,33 +804,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         return $element;
     }
 
-    protected function assertRowElementContainsText($row, $value, $key, $actual)
-    {
-        $value = $this->fixStepArgument($value);
-
-        $regex = '/'.preg_quote($value, '/').'/ui';
-
-        $message = sprintf(
-            'The string "%s" was not found in the HTML of the element matching ".%s .%s".',
-            $value,
-            $row,
-            $key
-        );
-
-        if (!preg_match($regex, $actual->getHtml())) {
-            throw new \InvalidArgumentException($message);
-        }
-
-        return $message;
-    }
-
-    /**
-     * @param $row
-     * @param $element
-     * @param $key
-     * @return mixed
-     */
-    protected function findElementInRowByClass($row, $element, $key)
+    protected function findElementInRowByClass($row, NodeElement $element, $key)
     {
         $actual = $element->find('css', '.'.$key);
         $message = sprintf(
@@ -740,6 +815,29 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         a::assertNotNull($actual, $message);
 
         return $actual;
+    }
+
+    protected function assertRowElementContainsText($position, $row, $key, $value, NodeElement $actual)
+    {
+        $value = $this->fixStepArgument($value);
+        $value = $this->replacePlaceholders($value);
+
+        $regex = '/'.preg_quote($value, '/').'/ui';
+
+        $message = sprintf(
+            'The string "%s" was not found in the HTML of the row "%d" matching ".%s .%s", found "%s"',
+            $value,
+            $position,
+            $row,
+            $key,
+            $actual->getHtml()
+        );
+
+        if (!preg_match($regex, $actual->getHtml())) {
+            throw new \InvalidArgumentException($message);
+        }
+
+        return $message;
     }
 
     public function assertElementContains($selector, $value)
@@ -758,5 +856,47 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
             );
             throw new \InvalidArgumentException($message);
         }
+    }
+
+    private function findField($field)
+    {
+        $field = $this->formatField($field);
+
+        $element = $this->getSession()->getPage()->findField($field);
+
+        if (!$element) {
+            $message = sprintf('The field "%s" does not exist', $field);
+            throw new InvalidArgumentException($message);
+        }
+
+        return $element;
+    }
+
+    private function findFields($field)
+    {
+        $field = $this->formatField($field);
+
+        $elements = $this->getSession()->getPage()->findAll('named', array('field', $field));
+
+        if (count($elements) == 0) {
+            $message = sprintf('No "%s" fields exist', $field);
+            throw new InvalidArgumentException($message);
+        }
+
+        return $elements;
+    }
+
+    private function findOption($field, $option)
+    {
+        $elements = $this->findFields($field);
+
+        foreach ($elements as $element) {
+            if ($element->getAttribute('value') == $option) {
+                return $element;
+            }
+        }
+
+        $message = sprintf('The option "%s" within "%s" does not exist', $option, $field);
+        throw new InvalidArgumentException($message);
     }
 }
