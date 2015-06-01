@@ -294,7 +294,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     public function iShouldSeeRows($row, TableNode $table)
     {
         foreach ($table->getHash() as $i => $values) {
-            $xpath = sprintf('//*[@class="%s"][position()=%d]', $row, $i + 1);
+            $xpath = sprintf('//*[contains(concat(" ", normalize-space(@class), " "), " %s ")][position()=%d]', $row, $i + 1);
 
             $element = $this->findElementInRow($row, $xpath, $i);
 
@@ -319,7 +319,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldCountRows($number, $row)
     {
-        $xpath = sprintf('//*[@class="%s"]', $row);
+        $xpath = sprintf('//*[contains(concat(" ", normalize-space(@class), " "), " %s ")]', $row);
 
         $elements = $this->getSession()->getPage()->find('xpath', $xpath);
 
@@ -604,7 +604,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         if (strpos($section, '.') !== false) {
             $vars = explode('.', $section);
-            $xpath = sprintf('//*[@class="%s"][position()=%d]', $vars[0], $vars[1] + 1);
+            $xpath = sprintf('//*[contains(concat(" ", normalize-space(@class), " "), " %s ")][position()=%d]', $vars[0], $vars[1] + 1);
 
             $element = $this->getSession()->getPage()->find('xpath', $xpath);
 
