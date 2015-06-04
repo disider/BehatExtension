@@ -133,6 +133,15 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Given /^I should see text "([^"]*)"$/
+     */
+    public function iShouldSeeText($text)
+    {
+        $text = $this->replacePlaceholders($text);
+        $this->assertPageContainsText($text);
+    }
+
+    /**
      * @Then /^I should see an? "([^"]*)" error$/
      */
     public function iSeeError($error)
