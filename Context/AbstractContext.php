@@ -133,6 +133,15 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Given /^I should see text "([^"]*)"$/
+     */
+    public function iShouldSeeText($text)
+    {
+        $text = $this->replacePlaceholders($text);
+        $this->assertPageContainsText($text);
+    }
+
+    /**
      * @Then /^I should see an? "([^"]*)" error$/
      */
     public function iSeeError($error)
@@ -338,7 +347,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldCountRows($number, $row)
     {
-        $xpath = sprintf('//*[contains(@class, "%s")]', $row);
+        $xpath = sprintf('//*[contains(concat(" ", normalize-space(@class), " "), " %s ")]', $row);
 
         $elements = $this->getSession()->getPage()->find('xpath', $xpath);
 
@@ -705,7 +714,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         if (strpos($section, '.') !== false) {
             $vars = explode('.', $section);
-            $xpath = sprintf('//*[@class="%s"][position()=%d]', $vars[0], $vars[1] + 1);
+            $xpath = sprintf('//*[contains(concat(" ", normalize-space(@class), " "), " %s ")][position()=%d]', $vars[0], $vars[1] + 1);
 
             $element = $this->getSession()->getPage()->find('xpath', $xpath);
 
