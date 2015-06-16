@@ -23,19 +23,9 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     protected $output;
 
-    /**
-     * @var string
-     */
-    private $filePath;
-
     public function __construct($parameters)
     {
         $this->debug = isset($parameters['debug']) ? $parameters['debug'] : true;
-    }
-
-    protected function setFilePath($path)
-    {
-        $this->filePath = $path;
     }
 
     /**
@@ -437,10 +427,10 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iUploadInTheField($fileName, $field)
     {
-        if (!$this->filePath)
+        if (!$this->contextPath)
             throw new InvalidArgumentException('Base file path not set. Call AbstractContext::setFilePath() with a valid file path.');
 
-        $filePath = $this->filePath . DIRECTORY_SEPARATOR . $fileName;
+        $filePath = $this->contextPath . DIRECTORY_SEPARATOR . $fileName;
         if (!is_file($filePath))
             throw new InvalidArgumentException(sprintf('File not found in %s', $filePath));
 

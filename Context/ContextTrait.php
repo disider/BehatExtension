@@ -5,6 +5,7 @@ namespace Diside\BehatExtension\Context;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
+use InvalidArgumentException;
 use PSS\Behat\Symfony2MockerExtension\ServiceMocker;
 use Symfony\Component\ExpressionLanguage\SyntaxError;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -16,7 +17,17 @@ trait ContextTrait
     protected $kernel;
 
     /** @var ServiceMocker */
-    private $mocker = null;
+    protected $mocker = null;
+
+    /**
+     * @var string
+     */
+    protected $contextPath;
+
+    protected function setContextPath($path)
+    {
+        $this->contextPath = $path;
+    }
 
     /** @BeforeScenario */
     public function purgeDatabase()
@@ -67,6 +78,32 @@ trait ContextTrait
     protected function replacePlaceholders($text)
     {
         $language = new ExpressionLanguage();
+        $language->register('md5', function ($path) {
+            return sprintf('(md5(%1$s))', $path);
+        }, function ($arguments, $path) {
+            if (!$this->contextPath)
+                throw new InvalidArgumentException('Base file path not set. Call setContextPath() with a valid file path.');
+
+            $path = $this->contextPath . '/' . $path;
+
+            if(!is_file($path))
+                throw new \Exception('Undefined file: ' . $path);
+
+            return md5(file_get_contents($path));
+        });
+        $language->register('get_file', function ($path) {
+            return sprintf('(file_get_contents(%1$s))', $path);
+        }, function ($arguments, $path) {
+            if (!$this->contextPath)
+                throw new InvalidArgumentException('Base file path not set. Call setContextPath() with a valid file path.');
+
+            $path = $this->contextPath . '/' . $path;
+
+            if(!is_file($path))
+                throw new \Exception('Undefined file: ' . $path);
+
+            return base64_encode(file_get_contents($path));
+        });
 
         $variables = $this->getEntityLookupTables();
 
