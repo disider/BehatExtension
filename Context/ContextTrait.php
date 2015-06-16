@@ -9,7 +9,7 @@ use InvalidArgumentException;
 use PSS\Behat\Symfony2MockerExtension\ServiceMocker;
 use Symfony\Component\ExpressionLanguage\SyntaxError;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Security\Core\Authorization\ExpressionLanguage;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 trait ContextTrait
 {
@@ -70,6 +70,26 @@ trait ContextTrait
         return $this->hasValue($values, $key) ? $values[$key] : $default;
     }
 
+    protected function getIntValue($values, $field, $default = 0)
+    {
+        return $this->getValue($values, $field, $default);
+    }
+
+    protected function getFloatValue(array $values, $key, $default = true)
+    {
+        return ($this->hasValue($values, $key) && is_numeric($values[$key])) ? floatval($values[$key]) : $default;
+    }
+
+    protected function getBoolValue(array $values, $key, $default = true)
+    {
+        return $this->hasValue($values, $key) ? $values[$key] == "true" : $default;
+    }
+
+    protected function getDateValue(array $values, $key, $default = '')
+    {
+        return new \DateTime($this->hasValue($values, $key) ? $values[$key] : $default);
+    }
+
     protected function hasValue(array $values, $key)
     {
         return isset($values[$key]);
@@ -77,33 +97,7 @@ trait ContextTrait
 
     protected function replacePlaceholders($text)
     {
-        $language = new ExpressionLanguage();
-        $language->register('md5', function ($path) {
-            return sprintf('(md5(%1$s))', $path);
-        }, function ($arguments, $path) {
-            if (!$this->contextPath)
-                throw new InvalidArgumentException('Base file path not set. Call setContextPath() with a valid file path.');
-
-            $path = $this->contextPath . '/' . $path;
-
-            if(!is_file($path))
-                throw new \Exception('Undefined file: ' . $path);
-
-            return md5(file_get_contents($path));
-        });
-        $language->register('get_file', function ($path) {
-            return sprintf('(file_get_contents(%1$s))', $path);
-        }, function ($arguments, $path) {
-            if (!$this->contextPath)
-                throw new InvalidArgumentException('Base file path not set. Call setContextPath() with a valid file path.');
-
-            $path = $this->contextPath . '/' . $path;
-
-            if(!is_file($path))
-                throw new \Exception('Undefined file: ' . $path);
-
-            return base64_encode(file_get_contents($path));
-        });
+        $language = $this->getExpressionLanguage();
 
         $variables = $this->getEntityLookupTables();
 
@@ -131,5 +125,5 @@ trait ContextTrait
     }
 
     protected abstract function getEntityLookupTables();
-
+    protected abstract function getExpressionLanguage();
 }
