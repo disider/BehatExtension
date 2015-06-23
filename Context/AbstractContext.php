@@ -701,6 +701,15 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Given /^the "([^"]*)" entity property should be "([^"]*)"$/
+     */
+    public function theEntityPropertyShouldBe($field, $value)
+    {
+        $field = $this->replacePlaceholders($field);
+        a::assertThat($field, a::equalTo($value));
+    }
+
+    /**
      * @Given /^dump element "([^"]*)"$/
      */
     public function iDumpElement($element)
