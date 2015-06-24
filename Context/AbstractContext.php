@@ -706,6 +706,10 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     public function theEntityPropertyShouldBe($field, $value)
     {
         $field = $this->replacePlaceholders($field);
+
+        if (in_array($value, array('true', 'false')))
+            $value = $value == 'true';
+
         a::assertThat($field, a::equalTo($value));
     }
 
