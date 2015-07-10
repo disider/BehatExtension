@@ -347,7 +347,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $xpath = sprintf('//*[contains(concat(" ", normalize-space(@class), " "), " %s ")]', $row);
 
-        $elements = $this->getSession()->getPage()->find('xpath', $xpath);
+        $elements = $this->getSession()->getPage()->findAll('xpath', $xpath);
 
         a::assertThat(count($elements), a::equalTo($number));
     }
