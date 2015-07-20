@@ -11,6 +11,7 @@ use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
 use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
 use Doctrine\Common\Util\Debug;
+use Mockery\Test\Generator\StringManipulation\Pass\CallTypeHintPassTest;
 use PHPUnit_Framework_Assert as a;
 use PSS\Behat\Symfony2MockerExtension\Context\ServiceMockerAwareInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
@@ -72,7 +73,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
                 // finds the h1 and h2 tags and prints them only
                 $crawler = new Crawler($body);
                 foreach ($crawler->filter('h1, h2')->extract(array('_text')) as $header) {
-                    $this->printDebug('        '. $header);
+                    $this->printDebug('        ' . $header);
                 }
             } else {
                 $this->printDebug($body);
@@ -368,7 +369,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldSeeTheOptionsSelected($select, TableNode $table)
     {
-        $select = $this->formatField($select).'[]';
+        $select = $this->formatField($select) . '[]';
 
         $this->assertSelect($select);
 
@@ -462,15 +463,35 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
     /**
      * @Given /^I fill the "([^"]*)" form with:$/
+     * @deprecated: Use /^I fill the "([^"]*)" fields with:$/
      */
     public function iFillTheFormWith($form, TableNode $table)
     {
-        foreach ($table->getHash() as $values) {
+        foreach ($table->getHash() as $index => $values) {
             foreach ($values as $key => $value) {
                 $value = $this->replacePlaceholders($value);
                 $key = $this->replacePlaceholders($key);
 
                 $this->fillField(sprintf('%s[%s]', $form, $key), $value);
+            }
+        }
+    }
+
+    /**
+     * @Given /^I fill the "([^"]*)" form collection with:$/
+     */
+    public function iFillTheFormCollectionWith($form, TableNode $table)
+    {
+        foreach ($table->getHash() as $index => $values) {
+            foreach ($values as $key => $value) {
+                $value = $this->replacePlaceholders($value);
+                $key = $this->replacePlaceholders($key);
+
+                try {
+                    $this->fillField(sprintf('%s[%s][%s]', $form, $index, $key), $value);
+                } catch (\Exception $e) {
+                    $this->iSelectTheOption(sprintf('%s[%s][%s]', $form, $index, $key), $value);
+                }
             }
         }
     }
@@ -501,10 +522,10 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     public function iCheckTheFields($field, TableNode $table)
     {
         foreach ($table->getRows() as $options) {
-            foreach($options as $option) {
+            foreach ($options as $option) {
                 $checkbox = $this->getSession()->getPage()->findField($option);
 
-                if(!$checkbox)
+                if (!$checkbox)
                     throw new InvalidArgumentException(sprintf('Checkbox "%s" with label "%s" not found', $field, $option));
 
                 $checkbox->check();
@@ -549,7 +570,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iSelectTheOptions($field, TableNode $table)
     {
-        $select = $this->formatField($field).'[]';
+        $select = $this->formatField($field) . '[]';
 
         foreach ($table->getRows() as $options) {
             foreach ($options as $option) {
@@ -638,7 +659,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
             );
         }
 
-        $filePath = $this->filePath.DIRECTORY_SEPARATOR.$fileName;
+        $filePath = $this->filePath . DIRECTORY_SEPARATOR . $fileName;
         if (!is_file($filePath)) {
             throw new InvalidArgumentException(sprintf('File not found in %s', $filePath));
         }
@@ -697,7 +718,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iSeeElements($number, $class)
     {
-        $this->assertNumElements($number, '.'.$class);
+        $this->assertNumElements($number, '.' . $class);
     }
 
     /**
@@ -733,13 +754,13 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
                 throw new \InvalidArgumentException(sprintf('Could not evaluate XPath: "%s"', $xpath));
             }
         } else {
-            $element = $this->assertSession()->elementExists('css', '.'.$section);
+            $element = $this->assertSession()->elementExists('css', '.' . $section);
         }
 
         foreach ($values as $key => $value) {
             $actual = $element->getHtml();
             $html = $this->fixStepArgument($value);
-            $regex = '/'.preg_quote($html, '/').'/ui';
+            $regex = '/' . preg_quote($html, '/') . '/ui';
 
             if (!preg_match($regex, $actual)) {
                 $message = sprintf(
@@ -777,7 +798,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         array_shift($vars);
 
         foreach ($vars as $var) {
-            $field .= '['.$var.']';
+            $field .= '[' . $var . ']';
         }
 
         return $field;
@@ -826,7 +847,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
     protected function findElementInRowByClass($row, NodeElement $element, $key)
     {
-        $actual = $element->find('css', '.'.$key);
+        $actual = $element->find('css', '.' . $key);
         $message = sprintf(
             'The element ".%s" was not found in ".%s".',
             $key,
@@ -842,7 +863,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         $value = $this->fixStepArgument($value);
         $value = $this->replacePlaceholders($value);
 
-        $regex = '/'.preg_quote($value, '/').'/ui';
+        $regex = '/' . preg_quote($value, '/') . '/ui';
 
         $message = sprintf(
             'The string "%s" was not found in the HTML of the row "%d" matching ".%s .%s", found "%s"',
@@ -864,7 +885,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $element = $this->assertSession()->elementExists('css', $selector);
         $actual = $element->getHtml();
-        $regex = '/'.preg_quote($value, '/').'/ui';
+        $regex = '/' . preg_quote($value, '/') . '/ui';
 
         if (!preg_match($regex, $actual)) {
             $message = sprintf(
