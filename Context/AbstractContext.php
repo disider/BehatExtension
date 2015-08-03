@@ -4,6 +4,7 @@ namespace Diside\BehatExtension\Context;
 
 use Behat\Behat\Event\BaseScenarioEvent;
 use Behat\Behat\Event\StepEvent;
+use Behat\Behat\Exception\PendingException;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
 use Behat\Mink\Element\NodeElement;
@@ -81,7 +82,6 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         }
     }
 
-
     /**
      * @Override
      */
@@ -90,6 +90,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         $page = $this->replacePlaceholders($page);
         parent::visit($page);
     }
+
 
     /**
      * @When /^I visit "([^"]*)"$/
@@ -252,6 +253,17 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         $field = $this->formatField($field);
 
         $this->assertSession()->fieldNotExists($field);
+    }
+
+    /**
+     * @Given /^I should see the "([^"]*)" field with "([^"]*)"$/
+     */
+    public function iShouldSeeTheFieldWith($field, $value)
+    {
+        $field = $this->replacePlaceholders($field);
+        $value = $this->replacePlaceholders($value);
+
+        $this->assertFieldContains($field, $value);
     }
 
     /**

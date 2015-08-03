@@ -26,9 +26,10 @@ class EntityLookup
 
     public function get($value)
     {
-        if ($value == 'last') {
+        if ($value == 'last' || $value == 'first') {
             // "last" is a special word you can use
-            $obj = $this->repository->findLast();
+            $method = 'find' . ucfirst($value);
+            $obj = $this->repository->$method();
 
             if (!$obj) {
                 throw new \Exception(
@@ -45,8 +46,7 @@ class EntityLookup
                     ->where('r.' . $this->field . ' = :value')
                     ->setParameter('value', $value)
                     ->getQuery()
-                    ->getOneOrNullResult()
-                ;
+                    ->getOneOrNullResult();
             } else {
                 $obj = $this->repository->findOneBy(array($this->field => $value));
             }
