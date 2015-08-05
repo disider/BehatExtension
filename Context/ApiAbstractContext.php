@@ -294,6 +294,8 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
         $actualValue = $this->getProperty($payload, $property);
         $actualValue = is_bool($actualValue) ? ($actualValue ? "true" : "false") : $actualValue;
 
+        $expectedValue = $this->replacePlaceholders($expectedValue);
+
         a::assertEquals(
             $expectedValue,
             $actualValue,
