@@ -43,21 +43,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
     protected function getExpressionLanguage()
     {
-        $language = new ExpressionLanguage();
-
-        $language->register('date', function ($value, $operation = 0) {
-            return sprintf('(date(%s))%s', $value, $operation);
-        }, function (array $values, $value, $operation = null) {
-            if (!is_null($operation)) {
-                $date = date($value, strtotime($operation));
-            } else {
-                $date = date($value);
-            }
-
-            return $date;
-        });
-
-        return $language;
+        return new ExpressionLanguage();
     }
 
     /**
