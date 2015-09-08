@@ -309,6 +309,18 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Given /^I should see the "([^"]*)" checkbox error:$/
+     * @Given /^I should see the "([^"]*)" checkbox errors:$/
+     */
+    public function iShouldSeeTheCheckboxError($field, TableNode $table)
+    {
+        foreach ($table->getRows() as $value) {
+            $element = sprintf('//input[@id = \'%s\']/../../ul', $field);
+            $this->assertElementContains($element, $value[0], 'xpath');
+        }
+    }
+
+    /**
      * @Then /^I should see the "([^"]*)" form:$/
      */
     public function iShouldSeeTheForm($form, TableNode $table)
@@ -905,9 +917,9 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         return $message;
     }
 
-    public function assertElementContains($selector, $value)
+    public function assertElementContains($selector, $value, $selectorType = 'css')
     {
-        $element = $this->assertSession()->elementExists('css', $selector);
+        $element = $this->assertSession()->elementExists($selectorType, $selector);
         $actual = $element->getHtml();
         $regex = '/'.preg_quote($value, '/').'/ui';
 
