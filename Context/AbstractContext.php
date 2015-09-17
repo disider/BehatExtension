@@ -370,7 +370,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^I should see (\d+) "([^"]*)" rows$/
+     * @Then /^I should see (\d+) "([^"]*)" rows?$/
      */
     public function iShouldCountRows($number, $row)
     {
