@@ -3,6 +3,7 @@
 namespace Diside\BehatExtension\Helper;
 
 use AppBundle\Entity\Repository\AbstractRepository;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 
@@ -39,6 +40,23 @@ class EntityLookup
                     )
                 );
             }
+
+        } else if (preg_match('/nth\d+/i', $value)) {
+            $index = str_replace('nth', '', $value) - 1;
+            $collection = $this->repository->findAll();
+
+            if (array_key_exists($index, $collection)) {
+                $obj = $collection[$index];
+            } else {
+                throw new \Exception(
+                    sprintf(
+                        'Cannot find nth%s via %s',
+                        $index,
+                        get_class($this->repository)
+                    )
+                );
+            }
+
         } else {
             if (!is_null($this->relation)) {
                 $obj = $this->repository->createQueryBuilder('q')
