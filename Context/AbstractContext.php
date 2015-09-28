@@ -628,6 +628,37 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @Then /^I should see the "([^"]*)" option "([^"]*)"$/
+     */
+    public function iSeeTheOption($field, $option)
+    {
+        $option = $this->replacePlaceholders($option);
+
+        $element = $this->findOption($field, $option);
+
+        if (!$element) {
+            $message = sprintf('There is no option "%s" within "%s".', $option, $field);
+            throw new InvalidArgumentException($message);
+        }
+    }
+
+    /**
+     * @Then /^I should not see the "([^"]*)" option "([^"]*)"$/
+     */
+    public function iSeeNoOption($field, $option)
+    {
+        $option = $this->replacePlaceholders($option);
+        $elements = $this->findFields($field);
+
+        foreach ($elements as $element) {
+            if ($element->getAttribute('value') == $option) {
+                $message = sprintf('There is an option "%s" within "%s", but it should not.', $option, $field);
+                throw new InvalidArgumentException($message);
+            }
+        }
+    }
+
+    /**
      * @Then /^I should see the "([^"]*)" option "([^"]*)" (disabled)$/
      */
     public function iSeeTheOptionStatus($field, $option, $status)
