@@ -515,10 +515,12 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
                 $value = $this->replacePlaceholders($value);
                 $key = $this->replacePlaceholders($key);
 
-                try {
-                    $this->fillField(sprintf('%s[%s][%s]', $form, $index, $key), $value);
-                } catch (\Exception $e) {
-                    $this->iSelectTheOption(sprintf('%s[%s][%s]', $form, $index, $key), $value);
+                $field = sprintf('%s[%s][%s]', $form, $index, $key);
+
+                if ($this->getSession()->getPage()->hasSelect($field)) {
+                    $this->iSelectTheOption($field, $value);
+                } else {
+                    $this->fillField($field, $value);
                 }
             }
         }
@@ -784,7 +786,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Given /^the "([^"]*)" entity property should be "([^"]*)"$/
+     * @Then /^the "([^"]*)" entity property should be "([^"]*)"$/
      */
     public function theEntityPropertyShouldBe($field, $value)
     {
@@ -795,6 +797,26 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         }
 
         a::assertThat($field, a::equalTo($value));
+    }
+
+    /**
+     * @Then /^I should see the "([^"]*)" form collection:$/
+     */
+    public function iShouldSeeFormCollection($form, TableNode $table)
+    {
+        foreach ($table->getHash() as $i => $values) {
+            foreach ($values as $field => $value) {
+                $field = $this->formatField(sprintf('%s.%s.%s', $form, $i, $field));
+                $field = $this->replacePlaceholders($field);
+                $value = $this->replacePlaceholders($value);
+
+                if ($this->getSession()->getPage()->hasSelect($field)) {
+                    $this->assertOptionSelected($field, $value);
+                } else {
+                    $this->assertFieldContains($field, $value);
+                }
+            }
+        }
     }
 
     /**
@@ -885,8 +907,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         $optionElement = $selectElement->find('named', array('option', "\"{$option}\""));
 
         a::assertNotNull($optionElement, sprintf('Option %s does not exist in select %s', $option, $select));
-        a::assertTrue($optionElement->hasAttribute("selected"));
-        a::assertTrue($optionElement->getAttribute("selected") == "selected");
+        a::assertTrue($optionElement->hasAttribute("selected"), sprintf('Option %s is not selected in select %s', $option, $select));
+        a::assertTrue($optionElement->getAttribute("selected") == "selected", sprintf('Option %s is not selected in select %s', $option, $select));
     }
 
     protected function assertOptionNotSelected($select, $option)
