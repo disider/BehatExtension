@@ -485,7 +485,11 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
             $key = $this->formatField(sprintf('%s.%s', $form, $key));
 
-            $this->fillField($key, $value);
+            if ($this->getSession()->getPage()->hasSelect($key)) {
+                $this->iSelectTheOption($key, $value);
+            } else {
+                $this->fillField($key, $value);
+            }
         }
     }
 
