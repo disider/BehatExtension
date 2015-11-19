@@ -73,7 +73,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
                 // finds the h1 and h2 tags and prints them only
                 $crawler = new Crawler($body);
-                foreach ($crawler->filter('h1, h2')->extract(array('_text')) as $header) {
+                foreach ($crawler->filter('h1, h2, .alert')->extract(array('_text')) as $header) {
                     $this->printDebug('        '.$header);
                 }
             } else {
