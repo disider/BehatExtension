@@ -213,7 +213,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $link = $this->replacePlaceholders($link);
 
-        $this->assertSession()->elementExists('xpath', sprintf('//a[contains(@href, "%s")]', $link));
+        $this->assertSession()->elementExists('xpath', $this->formatXpathLink($link));
     }
 
     /**
@@ -223,7 +223,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $link = $this->replacePlaceholders($link);
 
-        $this->assertSession()->elementNotExists('xpath', sprintf('//a[contains(@href, "%s")]', $link));
+        $this->assertSession()->elementNotExists('xpath', $this->formatXpathLink($link));
     }
 
     /**
@@ -485,7 +485,11 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
             $key = $this->formatField(sprintf('%s.%s', $form, $key));
 
-            $this->fillField($key, $value);
+            if ($this->getSession()->getPage()->hasSelect($key)) {
+                $this->iSelectTheOption($key, $value);
+            } else {
+                $this->fillField($key, $value);
+            }
         }
     }
 
@@ -1028,5 +1032,14 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
         $message = sprintf('The option "%s" within "%s" does not exist', $option, $field);
         throw new InvalidArgumentException($message);
+    }
+
+    /**
+     * @param $link
+     * @return string
+     */
+    protected function formatXpathLink($link)
+    {
+        return sprintf('//a[contains(@href, "%1$s") or contains(@title, "%1$s") or descendant::text()[contains(., "%1$s")]]', $link);
     }
 }
