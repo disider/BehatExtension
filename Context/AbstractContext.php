@@ -366,7 +366,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldSeeNoRows($row)
     {
-        $this->assertElementNotOnPage($row);
+        $this->iShouldCountRows(0, $row);
     }
 
     /**
