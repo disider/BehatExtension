@@ -5,6 +5,7 @@ namespace Diside\BehatExtension\Context;
 use Behat\Behat\Context\BehatContext;
 use Behat\Behat\Event\BaseScenarioEvent;
 use Behat\Behat\Event\StepEvent;
+use Behat\Behat\Exception\PendingException;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
@@ -410,6 +411,20 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
             $this->getProperty($payload, $property),
             "Asserting the [$property] property contains [$count] items: " . json_encode($payload)
         );
+    }
+    
+    /**
+     * @Given /^the "([^"]*)" property should contain the item(?:|s):$/
+     */
+    public function thePropertyShouldContainTheItems($property, TableNode $table)
+    {
+        $payload = $this->getResponsePayload();
+        $actualValue = $this->getProperty($payload, $property);
+
+        foreach ($table->getRows() as $row) {
+            $value = $this->replacePlaceholders($row[0]);
+            a::assertContains($value, $actualValue);
+        }
     }
 
     /**
