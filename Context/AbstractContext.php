@@ -300,6 +300,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldSeeTheFormErrors($form, TableNode $table)
     {
+        $form = $this->replacePlaceholders($form);
+
         foreach ($table->getRowsHash() as $field => $value) {
             $field = str_replace('.', '_', $field);
 
@@ -480,6 +482,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     public function iFillTheFieldsWith($form, TableNode $table)
     {
         foreach ($table->getRowsHash() as $key => $value) {
+            $form = $this->replacePlaceholders($form);
+
             $value = $this->replacePlaceholders($value);
             $key = $this->replacePlaceholders($key);
 
@@ -545,6 +549,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iCheckTheField($field)
     {
+        $field = $this->replacePlaceholders($field);
         $field = $this->formatField($field);
 
         $this->checkOption($field);
@@ -871,6 +876,13 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     public function printDebug($string)
     {
         $this->getOutput()->writeln($string);
+    }
+
+    public function pressButton($button)
+    {
+        $button = $this->replacePlaceholders($button);
+        $button = $this->fixStepArgument($button);
+        $this->getSession()->getPage()->pressButton($button);
     }
 
     /**
