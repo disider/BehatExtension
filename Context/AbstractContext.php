@@ -518,6 +518,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iFillTheFormCollectionWith($form, TableNode $table)
     {
+        $form = $this->replacePlaceholders($form);
+
         foreach ($table->getHash() as $index => $values) {
             foreach ($values as $key => $value) {
                 $value = $this->replacePlaceholders($value);
