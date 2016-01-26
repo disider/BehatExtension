@@ -753,16 +753,6 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
-     * @Then /^I should see the "([^"]*)" details2:$/
-     */
-    public function iCanViewTheDetails2($section, TableNode $table)
-    {
-        foreach ($table->getHash() as $values) {
-            $this->assertDetailExists($section, $values);
-        }
-    }
-
-    /**
      * @Then /^I should see the "([^"]*)" details:$/
      */
     public function iCanViewTheDetails($section, TableNode $table)
@@ -771,6 +761,18 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
             $selector = sprintf('.%s .%s', $section, $field);
 
             $this->assertElementContains($selector, $value);
+        }
+    }
+
+    /**
+     * @Then /^I should see no "([^"]*)" details:$/
+     */
+    public function iCanViewNoDetails($section, TableNode $table)
+    {
+        foreach ($table->getRowsHash() as $field => $value) {
+            $selector = sprintf('.%s .%s', $section, $field);
+
+            $this->assertElementNotContains($selector, $value);
         }
     }
 
