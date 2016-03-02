@@ -169,6 +169,22 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
     }
 
     /**
+     * @When /^I request "(GET|PUT|POST|DELETE|PATCH) ([^"]*)" with queries:$/
+     */
+    public function iRequestWithQueries($httpMethod, $resource, TableNode $table)
+    {
+        $queryArray = array();
+        foreach ($table->getRows() as $row) {
+            $queryArray[] = $row[0];
+        }
+
+        $queryString = implode('&', $queryArray);
+        $resource .= ("?" . $queryString);
+
+        $this->iRequest($httpMethod, $resource);
+    }
+
+    /**
      * @Then /^the response status code should be (?P<code>\d+)$/
      */
     public function checkResponseStatusCode($statusCode)
