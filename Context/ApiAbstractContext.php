@@ -444,6 +444,37 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
     }
 
     /**
+     * @Given /^the "([^"]*)" dictionary should contain the item(?:|s):$/
+     */
+    public function theDictionaryShouldContainTheItems($property, TableNode $table)
+    {
+        $payload = $this->getResponsePayload();
+        $actualValues = $this->getProperty($payload, $property);
+        $row = $table->getHash()[0];
+
+        foreach ($row as $key => $value) {
+            a::assertEquals($this->replacePlaceholders($value), $actualValues[$key]);
+        }
+    }
+
+    /**
+     * @Given /^the "([^"]*)" dictionaries array should contain the item(?:|s):$/
+     */
+    public function theDictionariesArrayShouldContainTheItems($property, TableNode $table)
+    {
+        $payload = $this->getResponsePayload();
+        $dictionariesArray = $this->getProperty($payload, $property);
+
+        foreach ($table->getHash() as $index => $values) {
+            $dictionary = $dictionariesArray[$index];
+
+            foreach ($values as $key => $value) {
+                a::assertEquals($this->replacePlaceholders($value), $dictionary[$key]);
+            }
+        }
+    }
+
+    /**
      * @Given /^the embedded "([^"]*)" should have a "([^"]*)" property equal to "([^"]*)"$/
      */
     public function theEmbeddedShouldHaveAPropertyEqualTo($embeddedName, $property, $value)
