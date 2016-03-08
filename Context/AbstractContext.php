@@ -4,20 +4,17 @@ namespace Diside\BehatExtension\Context;
 
 use Behat\Behat\Event\BaseScenarioEvent;
 use Behat\Behat\Event\StepEvent;
-use Behat\Behat\Exception\PendingException;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
 use Behat\Mink\Element\NodeElement;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
 use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
-use Doctrine\Common\Util\Debug;
-use Mockery\Test\Generator\StringManipulation\Pass\CallTypeHintPassTest;
 use PHPUnit_Framework_Assert as a;
 use PSS\Behat\Symfony2MockerExtension\Context\ServiceMockerAwareInterface;
-use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 abstract class AbstractContext extends MinkContext implements KernelAwareInterface, ServiceMockerAwareInterface
 {
@@ -760,6 +757,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         foreach ($table->getRowsHash() as $field => $value) {
             $selector = sprintf('.%s .%s', $section, $field);
 
+            $value = $this->replacePlaceholders($value);
+
             $this->assertElementContains($selector, $value);
         }
     }
@@ -773,6 +772,18 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
             $selector = sprintf('.%s .%s', $section, $field);
 
             $this->assertElementNotContains($selector, $value);
+        }
+    }
+
+    /**
+     * @Then /^I should see no "([^"]*)" details row?s:$/
+     */
+    public function iCanViewNoDetailsRow($section, TableNode $table)
+    {
+        foreach ($table->getRowsHash() as $field => $value) {
+            $selector = sprintf('.%s .%s', $section, $field);
+
+            $this->assertElementNotOnPage($selector);
         }
     }
 
