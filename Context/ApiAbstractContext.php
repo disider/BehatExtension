@@ -5,7 +5,6 @@ namespace Diside\BehatExtension\Context;
 use Behat\Behat\Context\BehatContext;
 use Behat\Behat\Event\BaseScenarioEvent;
 use Behat\Behat\Event\StepEvent;
-use Behat\Behat\Exception\PendingException;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
@@ -372,7 +371,6 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
                 }
 
                 $payload = $payload->{$key};
-
             } elseif (is_array($payload)) {
                 if (!array_key_exists($key, $payload)) {
                     throw new \Exception(sprintf('Cannot find the property "%s"', $property));
@@ -416,6 +414,21 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
     }
 
     /**
+     * @Then /^the "([^"]*)" property array should be empty$/
+     */
+    public function thePropertyIsAnEmptyArray($property)
+    {
+        $payload = $this->getResponsePayload();
+
+        $actualValue = $this->getProperty($payload, $property);
+
+        a::assertEmpty(
+            $actualValue,
+            "The [$property] property is not an empty array: " . json_encode($payload)
+        );
+    }
+
+    /**
      * @Then /^the "([^"]*)" property should contain (\d+) item(?:|s)$/
      */
     public function thePropertyContainsItems($property, $count)
@@ -428,7 +441,7 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
             "Asserting the [$property] property contains [$count] items: " . json_encode($payload)
         );
     }
-    
+
     /**
      * @Given /^the "([^"]*)" property should contain the item(?:|s):$/
      */
@@ -437,9 +450,18 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
         $payload = $this->getResponsePayload();
         $actualValue = $this->getProperty($payload, $property);
 
-        foreach ($table->getRows() as $row) {
-            $value = $this->replacePlaceholders($row[0]);
-            a::assertContains($value, $actualValue);
+        if (is_array($actualValue)) {
+            foreach ($table->getRowsHash() as $key => $row) {
+                $value = $this->replacePlaceholders($row);
+
+                a::assertContains($value, $actualValue[$key]);
+            }
+        } else {
+            foreach ($table->getRows() as $row) {
+                $value = $this->replacePlaceholders($row[0]);
+
+                a::assertContains($value, $actualValue);
+            }
         }
     }
 

@@ -104,7 +104,7 @@ trait ContextTrait
         while (false !== $startPos = strpos($text, '%')) {
             $endPos = strpos($text, '%', $startPos + 1);
             if (!$endPos) {
-                throw new \Exception('Cannot find finishing % - expression look unbalanced!');
+                throw new \Exception(sprintf('Cannot find finishing %% in "%s" - expression look unbalanced!', $text));
             }
             $expression = substr($text, $startPos + 1, $endPos - $startPos - 1);
 
