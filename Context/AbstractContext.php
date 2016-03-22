@@ -353,9 +353,10 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
             $element = $rows[$i];
 
             foreach ($values as $key => $value) {
-                $actual = $this->findElementInRowByClass($row, $element, $key);
-
-                $this->assertRowElementContainsText($i, $row, $key, $value, $actual);
+                if (!empty($value)){
+                    $actual = $this->findElementInRowByClass($row, $element, $key);
+                    $this->assertRowElementContainsText($i, $row, $key, $value, $actual);
+                }
             }
         }
     }
