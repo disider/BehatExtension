@@ -4,6 +4,7 @@ namespace Diside\BehatExtension\Context;
 
 use Behat\Behat\Event\BaseScenarioEvent;
 use Behat\Behat\Event\StepEvent;
+use Behat\Behat\Exception\PendingException;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
 use Behat\Mink\Element\NodeElement;
@@ -824,6 +825,19 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
         a::assertThat($field, a::equalTo($value));
     }
+
+
+    /**
+     * @Given /^the "([^"]*)" entity property should contain "([^"]*)"$/
+     */
+    public function theEntityPropertyShouldContain($field, $value)
+    {
+        $field = $this->replacePlaceholders($field);
+        $value = $this->replacePlaceholders($value);
+
+        a::assertThat($field, a::stringContains($value));
+    }
+
 
     /**
      * @Then /^I should see the "([^"]*)" form collection:$/
