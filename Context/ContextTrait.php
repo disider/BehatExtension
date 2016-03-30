@@ -95,6 +95,7 @@ trait ContextTrait
 
     protected function replacePlaceholders($text)
     {
+        /** @var ExpressionLanguage $language */
         $language = $this->getExpressionLanguage();
 
         $variables = $this->getEntityLookupTables();
@@ -115,6 +116,11 @@ trait ContextTrait
 
                 throw $e;
             }
+
+            if(is_array($evaluated)) {
+                $evaluated = implode(';', $evaluated);
+            }
+
             // replace the expression with the final value
             $text = str_replace('%' . $expression . '%', $evaluated, $text);
         }
