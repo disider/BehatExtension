@@ -96,8 +96,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $this->visit($page);
 
-//        if($this->getSession()->getStatusCode() != 200)
-//            $this->printLastResponse();
+        if($this->getSession()->getStatusCode() != 200)
+            $this->printLastResponse();
 
         $this->assertResponseStatus(200);
     }
