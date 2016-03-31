@@ -939,7 +939,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
     protected function assertSelect($select)
     {
-        $selectElement = $this->getSession()->getPage()->find('named', array('select', "\"{$select}\""));
+        $selectElement = $this->findSelect($select);
         a::assertNotNull($selectElement, sprintf('Select %s does not exist', $select));
     }
 
@@ -947,8 +947,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $option = $this->replacePlaceholders($option);
 
-        $selectElement = $this->getSession()->getPage()->find('named', array('select', "\"{$select}\""));
-        $optionElement = $selectElement->find('named', array('option', "\"{$option}\""));
+        $selectElement = $this->findSelect($select);
+        $optionElement = $selectElement->find('named', array('option', $option));
 
         a::assertNotNull($optionElement, sprintf('Option %s does not exist in select %s', $option, $select));
         a::assertTrue($optionElement->hasAttribute("selected"), sprintf('Option %s is not selected in select %s', $option, $select));
@@ -959,7 +959,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $option = $this->replacePlaceholders($option);
 
-        $selectElement = $this->getSession()->getPage()->find('named', array('select', "\"{$select}\""));
+        $selectElement = $this->findSelect($select);
         $optionElement = $selectElement->find('named', array('option', "\"{$option}\""));
 
         a::assertNotNull($optionElement, sprintf('Option %s does not exist in select %s', $option, $select));
@@ -1030,6 +1030,11 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
             );
             throw new \InvalidArgumentException($message);
         }
+    }
+
+    private function findSelect($select)
+    {
+        return $this->getSession()->getPage()->find('named', array('select', $select));
     }
 
     private function findField($field)
