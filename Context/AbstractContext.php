@@ -38,7 +38,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         $this->filePath = $path;
     }
 
-    protected function getExpressionLanguage()
+    public function getExpressionLanguage()
     {
         return new ExpressionLanguage();
     }
