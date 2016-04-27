@@ -5,11 +5,10 @@ namespace Diside\BehatExtension\Context;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
-use InvalidArgumentException;
 use PSS\Behat\Symfony2MockerExtension\ServiceMocker;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Component\ExpressionLanguage\SyntaxError;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 trait ContextTrait
 {
@@ -75,7 +74,7 @@ trait ContextTrait
         return $this->getValue($values, $field, $default);
     }
 
-    protected function getFloatValue(array $values, $key, $default = true)
+    protected function getFloatValue(array $values, $key, $default = 0.0)
     {
         return ($this->hasValue($values, $key) && is_numeric($values[$key])) ? floatval($values[$key]) : $default;
     }
@@ -97,6 +96,7 @@ trait ContextTrait
 
     protected function replacePlaceholders($text)
     {
+        /** @var ExpressionLanguage $language */
         $language = $this->getExpressionLanguage();
 
         $variables = $this->getEntityLookupTables();
@@ -104,7 +104,7 @@ trait ContextTrait
         while (false !== $startPos = strpos($text, '%')) {
             $endPos = strpos($text, '%', $startPos + 1);
             if (!$endPos) {
-                throw new \Exception('Cannot find finishing % - expression look unbalanced!');
+                return $text;
             }
             $expression = substr($text, $startPos + 1, $endPos - $startPos - 1);
 
@@ -117,6 +117,11 @@ trait ContextTrait
 
                 throw $e;
             }
+
+            if(is_array($evaluated)) {
+                $evaluated = implode(';', $evaluated);
+            }
+
             // replace the expression with the final value
             $text = str_replace('%' . $expression . '%', $evaluated, $text);
         }
@@ -125,5 +130,6 @@ trait ContextTrait
     }
 
     protected abstract function getEntityLookupTables();
+
     protected abstract function getExpressionLanguage();
 }
