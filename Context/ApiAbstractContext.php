@@ -485,6 +485,21 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
         );
     }
 
+    /**
+     * @Then /^the "([^"]*)" entity property should be "([^"]*)"$/
+     */
+    public function theEntityPropertyShouldBe($field, $value)
+    {
+        $field = $this->replacePlaceholders($field);
+        $value = $this->replacePlaceholders($value);
+
+        if (in_array($value, array('true', 'false'))) {
+            $value = $value == 'true';
+        }
+
+        a::assertThat($field, a::equalTo($value));
+    }
+
     protected function buildClient($baseUrl)
     {
         $this->client = $this->get('test.client');
