@@ -2,8 +2,6 @@
 
 namespace Diside\BehatExtension\Context;
 
-use Doctrine\Common\DataFixtures\Purger\ORMPurger;
-use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use PSS\Behat\Symfony2MockerExtension\ServiceMocker;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
@@ -26,16 +24,6 @@ trait ContextTrait
     protected function setContextPath($path)
     {
         $this->contextPath = $path;
-    }
-
-    /** @BeforeScenario */
-    public function purgeDatabase()
-    {
-        /** @var EntityManager $entityManager */
-        $entityManager = $this->getContainer()->get('doctrine.orm.entity_manager');
-
-        $purger = new ORMPurger($entityManager);
-        $purger->purge();
     }
 
     public function setServiceMocker(ServiceMocker $mocker)
