@@ -2,12 +2,11 @@
 
 namespace Diside\BehatExtension\Context;
 
-use Behat\Behat\Context\BehatContext;
-use Behat\Behat\Event\BaseScenarioEvent;
-use Behat\Behat\Event\StepEvent;
+use Behat\Behat\Context\Context;
+use Behat\Behat\Hook\Scope\AfterScenarioScope;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
-use Behat\Symfony2Extension\Context\KernelAwareInterface;
+use Behat\Symfony2Extension\Context\KernelAwareContext;
 use PHPUnit_Framework_Assert as a;
 use Symfony\Component\BrowserKit\Client;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -16,7 +15,7 @@ use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-abstract class ApiAbstractContext extends BehatContext implements KernelAwareInterface
+abstract class ApiAbstractContext implements Context, KernelAwareContext
 {
     use ContextTrait;
 
@@ -57,9 +56,9 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
     /**
      * @AfterScenario
      */
-    public function printLastResponseOnError(BaseScenarioEvent $scenarioEvent)
+    public function printLastResponseOnError(AfterScenarioScope $scope)
     {
-        if ($scenarioEvent->getResult() == StepEvent::FAILED) {
+        if (!$scope->getTestResult()->isPassed()) {
             if ($this->response) {
                 $body = $this->getResponse()->getContent();
 
