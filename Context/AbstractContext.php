@@ -738,7 +738,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
         $optionElement = $selectElement->find('named', array('option', $option));
 
-        if($optionElement != null) {
+        if ($optionElement != null) {
             $message = sprintf('There is an option "%s" within "%s", but it should not.', $option, $select);
             throw new InvalidArgumentException($message);
         }
@@ -1022,7 +1022,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
     protected function assertOptionSelected($select, $option)
     {
-        $option = $this->replacePlaceholders($option);
+        $option = $this->getXpathLiteral($this->replacePlaceholders($option));
 
         $selectElement = $this->findSelect($select);
         $optionElement = $selectElement->find('named', array('option', $option));
@@ -1034,7 +1034,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
     protected function assertOptionNotSelected($select, $option)
     {
-        $option = $this->replacePlaceholders($option);
+        $option = $this->getXpathLiteral($this->replacePlaceholders($option));
 
         $selectElement = $this->findSelect($select);
         $optionElement = $selectElement->find('named', array('option', $option));
@@ -1125,15 +1125,14 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
     private function findSelect($select)
     {
-        $select = $this->formatField($select);
-
         $session = $this->getSession();
-
         $page = $session->getPage();
-        $selectElement = $page->find('named', array('select', $select));
+
+        $selectLiteral = $this->getXpathLiteral($this->formatField($select));
+        $selectElement = $page->find('named', array('select', $selectLiteral));
 
         if (!$selectElement) {
-            $selectElement = $page->find('named', array('select', $select . '[]'));
+            $selectElement = $page->find('named', array('select', $this->getXpathLiteral($select . '[]')));
         }
 
         return $selectElement;
@@ -1188,5 +1187,10 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     protected function formatXpathLink($link)
     {
         return sprintf('//a[contains(@href, "%1$s") or contains(@title, "%1$s") or descendant::text()[contains(., "%1$s")]]', $link);
+    }
+
+    private function getXpathLiteral($string)
+    {
+        return $this->getSession()->getSelectorsHandler()->xpathLiteral($string);
     }
 }
