@@ -2,21 +2,20 @@
 
 namespace Diside\BehatExtension\Context;
 
-use Behat\Behat\Event\BaseScenarioEvent;
-use Behat\Behat\Event\StepEvent;
+use Behat\Behat\EventDispatcher\Event;
+use Behat\Behat\Hook\Scope\AfterScenarioScope;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
 use Behat\Mink\Element\NodeElement;
 use Behat\MinkExtension\Context\MinkContext;
-use Behat\Symfony2Extension\Context\KernelAwareInterface;
+use Behat\Symfony2Extension\Context\KernelAwareContext;
 use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
 use PHPUnit_Framework_Assert as a;
-use PSS\Behat\Symfony2MockerExtension\Context\ServiceMockerAwareInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
-abstract class AbstractContext extends MinkContext implements KernelAwareInterface, ServiceMockerAwareInterface
+abstract class AbstractContext extends MinkContext implements KernelAwareContext
 {
     use ContextTrait;
 
@@ -27,11 +26,6 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
     /** @var string */
     protected $filePath;
-
-    public function __construct($parameters)
-    {
-        $this->debug = isset($parameters['debug']) ? $parameters['debug'] : true;
-    }
 
     protected function setFilePath($path)
     {
@@ -46,9 +40,9 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     /**
      * @AfterScenario
      */
-    public function printLastResponseOnError(BaseScenarioEvent $scenarioEvent)
+    public function printLastResponseOnError(AfterScenarioScope $scope)
     {
-        if ($scenarioEvent->getResult() == StepEvent::FAILED) {
+        if (!$scope->getTestResult()->isPassed()) {
             $body = $this->getSession()->getPage()->getContent();
 
             // could we even ask them if they want to print out the error?
@@ -91,7 +85,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 
 
     /**
-     * @When /^I visit "([^"]*)"$/
+     * @When I visit :page
      */
     public function iVisit($page)
     {
