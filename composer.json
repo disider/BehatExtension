@@ -12,8 +12,8 @@
     ],
     "require": {
         "php": ">=5.3.0",
-        "nelmio/alice": "~1.6",
-        "doctrine/doctrine-bundle": "~1.2"
+        "nelmio/alice": "~2.1.4",
+        "doctrine/doctrine-bundle": "~1.4"
     },
     "autoload": {
         "psr-0": { "Diside\\BehatExtension": "" }
