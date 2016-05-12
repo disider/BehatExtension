@@ -532,7 +532,7 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
         a::assertThat($field, a::stringContains($value));
     }
 
-    protected function buildClient($baseUrl)
+    protected function buildClient()
     {
         $this->client = $this->get('test.client');
     }
