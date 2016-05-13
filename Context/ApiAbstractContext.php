@@ -390,6 +390,8 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
         $payload = $this->getResponsePayload();
         $actualValue = $this->getProperty($payload, $property);
 
+        $expectedValue = $this->replacePlaceholders($expectedValue);
+
         a::assertContains(
             $expectedValue,
             $actualValue,
