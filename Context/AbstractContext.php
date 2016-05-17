@@ -469,6 +469,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
      */
     public function iShouldSeeTheChecked($field)
     {
+        $field = $this->replacePlaceholders($field);
         $field = $this->formatField($field);
 
         $this->assertCheckboxChecked($field);
@@ -479,6 +480,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
      */
     public function iShouldSeeTheUnchecked($field)
     {
+        $field = $this->replacePlaceholders($field);
         $field = $this->formatField($field);
 
         $this->assertCheckboxNotChecked($field);
