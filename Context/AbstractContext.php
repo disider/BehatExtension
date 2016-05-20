@@ -9,12 +9,12 @@ use Behat\Gherkin\Node\TableNode;
 use Behat\Mink\Element\NodeElement;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
+use Diside\BehatExtension\Helper\ExpressionLanguage;
 use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
 use PHPUnit_Framework_Assert as a;
 use PSS\Behat\Symfony2MockerExtension\Context\ServiceMockerAwareInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\DomCrawler\Crawler;
-use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 abstract class AbstractContext extends MinkContext implements KernelAwareInterface, ServiceMockerAwareInterface
 {
@@ -268,6 +268,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldSeeTheFieldWith($field, $value)
     {
+        $field = $this->formatField($field);
+
         $field = $this->replacePlaceholders($field);
         $value = $this->replacePlaceholders($value);
 
@@ -285,6 +287,20 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
             $value = $this->replacePlaceholders($value);
 
             $this->assertFieldContains($field, $value);
+        }
+    }
+
+    /**
+     * @Then /^I should not see the "([^"]*)" fields values:$/
+     */
+    public function iShouldSeeNoFormFieldsValues($form, TableNode $table)
+    {
+        foreach ($table->getRowsHash() as $field => $value) {
+            $field = $this->formatField(sprintf('%s.%s', $form, $field));
+            $field = $this->replacePlaceholders($field);
+            $value = $this->replacePlaceholders($value);
+
+            $this->assertFieldNotContains($field, $value);
         }
     }
 
@@ -518,6 +534,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iCanClickOn($linkOrButton)
     {
+        $linkOrButton = $this->replacePlaceholders($linkOrButton);
+
         $this->assertSession()->elementExists(
             'named',
             array(
