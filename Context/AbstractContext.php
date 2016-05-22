@@ -1104,6 +1104,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $value = $this->fixStepArgument($value);
         $value = $this->replacePlaceholders($value);
+        $value = html_entity_decode($value);
 
         $regex = '/' . preg_quote($value, '/') . '/ui';
 
@@ -1204,7 +1205,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     protected function formatXpathLink($link)
     {
-        return sprintf('//a[contains(@href, "%1$s") or contains(@title, "%1$s") or descendant::text()[contains(., "%1$s")]]', $link);
+        return sprintf('//a[("%1$s" = substring(@href, string-length(@href) - string-length("%1$s") +1)) or contains(@title, "%1$s") or descendant::text()[contains(., "%1$s")]]', $link);
     }
 
     private function getXpathLiteral($string)
