@@ -160,7 +160,10 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
 
         $payload = $this->replacePlaceholders($this->payload);
 
-        $this->client->request($method, $resource, array(), array(), array('HTTP_X-Requested-With' => 'XMLHttpRequest'), $payload);
+        $this->client->request($method, $resource, array(), array(), array(
+            'HTTP_Accept' => 'application/json',
+            'HTTP_X-Requested-With' => 'XMLHttpRequest'
+        ), $payload);
         $this->lastRequest = $this->client->getRequest();
         $this->response = $this->client->getResponse();
         $this->responsePayload = $this->getResponsePayload();
