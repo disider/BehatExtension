@@ -161,7 +161,10 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
 
         $payload = $this->replacePlaceholders($this->payload);
 
-        $this->client->request($method, $resource, array(), array(), array('HTTP_X-Requested-With' => 'XMLHttpRequest'), $payload);
+        $this->client->request($method, $resource, array(), array(), array(
+            'HTTP_Accept' => 'application/json',
+            'HTTP_X-Requested-With' => 'XMLHttpRequest'
+        ), $payload);
         $this->lastRequest = $this->client->getRequest();
         $this->response = $this->client->getResponse();
         $this->responsePayload = $this->getResponsePayload();
@@ -391,6 +394,8 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
         $payload = $this->getResponsePayload();
         $actualValue = $this->getProperty($payload, $property);
 
+        $expectedValue = $this->replacePlaceholders($expectedValue);
+
         a::assertContains(
             $expectedValue,
             $actualValue,
@@ -533,7 +538,7 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
         a::assertThat($field, a::stringContains($value));
     }
 
-    protected function buildClient($baseUrl)
+    protected function buildClient()
     {
         $this->client = $this->get('test.client');
     }
