@@ -335,6 +335,29 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
     {
         $payload = $this->getResponsePayload();
         $actualValue = $this->getProperty($payload, $property);
+
+        $actualValue = is_bool($actualValue) ? ($actualValue ? "true" : "false") : $actualValue;
+
+        $expectedValue = $this->replacePlaceholders($expectedValue);
+
+        a::assertEquals(
+            $expectedValue,
+            $actualValue,
+            "Asserting the [$property] property in current scope equals [$expectedValue]: " . json_encode($payload)
+        );
+    }
+
+    /**
+     * @Then /^the "([^"]*)" link property should equal "([^"]*)"$/
+     */
+    public function theLinkPropertyEquals($property, $expectedValue)
+    {
+        $expectedValue = urldecode($expectedValue);
+
+        $payload = $this->getResponsePayload();
+        $actualValue = $this->getProperty($payload, $property);
+        $actualValue = urldecode($actualValue);
+
         $actualValue = is_bool($actualValue) ? ($actualValue ? "true" : "false") : $actualValue;
 
         $expectedValue = $this->replacePlaceholders($expectedValue);
