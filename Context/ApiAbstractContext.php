@@ -224,9 +224,20 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
         if ($this->response) {
             $body = $this->getResponse()->getContent();
 
+            $this->printDebug(
+                "\n" .
+                sprintf(
+                    '%s: %s',
+                    $this->lastRequest->getMethod(),
+                    $this->lastRequest->getUri()
+                ) .
+                "\n"
+            );
+
             $this->printDebug((string)$this->response->headers);
 
-            if ($this->response->headers->get('Content-Type') == 'application/json') {
+            if ($this->response->headers->get('Content-Type') == 'application/json' ||
+                $this->response->headers->get('Content-Type') == 'application/problem+json') {
                 $data = json_decode($body);
                 if ($data === null) {
                     // invalid JSON!
