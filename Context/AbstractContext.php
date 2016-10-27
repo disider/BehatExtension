@@ -734,14 +734,14 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     /**
      * @Then /^I should see the "([^"]*)" option "([^"]*)"$/
      */
-    public function iSeeTheOption($field, $option)
+    public function iSeeTheOption($select, $option)
     {
         $option = $this->replacePlaceholders($option);
 
-        $element = $this->findOption($field, $option);
+        $element = $this->findOptionElement($select, $option);
 
         if (!$element) {
-            $message = sprintf('There is no option "%s" within "%s".', $option, $field);
+            $message = sprintf('There is no option "%s" within "%s".', $option, $select);
             throw new InvalidArgumentException($message);
         }
     }
@@ -752,9 +752,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     public function iSeeNoOption($select, $option)
     {
         $this->assertSelect($select);
-        $selectElement = $this->findSelect($select);
 
-        $optionElement = $selectElement->find('named', array('option', $option));
+        $optionElement = $this->findOptionElement($select, $option);
 
         if ($optionElement != null) {
             $message = sprintf('There is an option "%s" within "%s", but it should not.', $option, $select);
@@ -767,7 +766,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iSeeTheOptionStatus($field, $option, $status)
     {
-        $element = $this->findOption($field, $option);
+        $element = $this->findOptionElement($field, $option);
 
         if (!$element->hasAttribute($status)) {
             $message = sprintf('The option "%s" within "%s" has no attribute "%s"', $option, $field, $status);
@@ -780,7 +779,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iSeeNoOptionStatus($field, $option, $status)
     {
-        $element = $this->findOption($field, $option);
+        $element = $this->findOptionElement($field, $option);
 
         if ($element->hasAttribute($status)) {
             $message = sprintf(
@@ -798,7 +797,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iCanSelectTheOption($field, $option)
     {
-        $this->findOption($field, $option);
+        $this->findOptionElement($field, $option);
     }
 
     /**
@@ -959,6 +958,18 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         var_dump($this->getSession()->getPage()->find('css', $element)->getHtml());
     }
 
+    /**
+     * @param $select
+     * @param $option
+     * @return null
+     */
+    protected function findOptionElement($select, $option)
+    {
+        $selectElement = $this->findSelect($select);
+
+        return $selectElement->find('named', array('option', $option));
+    }
+
     private function assertDetailExists($section, $values)
     {
         if (strpos($section, '.') !== false) {
@@ -1042,24 +1053,22 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $option = $this->getXpathLiteral($this->replacePlaceholders($option));
 
-        $selectElement = $this->findSelect($select);
-        $optionElement = $selectElement->find('named', array('option', $option));
+        $element = $this->findOptionElement($select, $option);
 
-        a::assertNotNull($optionElement, sprintf('Option %s does not exist in select %s', $option, $select));
-        a::assertTrue($optionElement->hasAttribute("selected"), sprintf('Option %s is not selected in select %s', $option, $select));
-        a::assertTrue($optionElement->getAttribute("selected") == "selected", sprintf('Option %s is not selected in select %s', $option, $select));
+        a::assertNotNull($element, sprintf('Option %s does not exist in select %s', $option, $select));
+        a::assertTrue($element->hasAttribute("selected"), sprintf('Option %s is not selected in select %s', $option, $select));
+        a::assertTrue($element->getAttribute("selected") == "selected", sprintf('Option %s is not selected in select %s', $option, $select));
     }
 
     protected function assertOptionNotSelected($select, $option)
     {
         $option = $this->getXpathLiteral($this->replacePlaceholders($option));
 
-        $selectElement = $this->findSelect($select);
-        $optionElement = $selectElement->find('named', array('option', $option));
+        $element = $this->findOptionElement($select, $option);
 
-        a::assertNotNull($optionElement, sprintf('Option %s does not exist in select %s', $option, $select));
-        a::assertFalse($optionElement->hasAttribute("selected"));
-        a::assertFalse($optionElement->getAttribute("selected") == "selected");
+        a::assertNotNull($element, sprintf('Option %s does not exist in select %s', $option, $select));
+        a::assertFalse($element->hasAttribute("selected"));
+        a::assertFalse($element->getAttribute("selected") == "selected");
     }
 
     protected function findElementInRow($row, $xpath, $i)
@@ -1154,6 +1163,11 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
             $selectElement = $page->find('named', array('select', $this->getXpathLiteral($select . '[]')));
         }
 
+        if (!$selectElement) {
+            $message = sprintf('The field "%s" does not exist', $select);
+            throw new InvalidArgumentException($message);
+        }
+
         return $selectElement;
     }
 
@@ -1169,34 +1183,6 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         }
 
         return $element;
-    }
-
-    private function findFields($field, $type = 'field')
-    {
-        $field = $this->formatField($field);
-
-        $elements = $this->getSession()->getPage()->findAll('named', array($type, $field));
-
-        if (count($elements) == 0) {
-            $message = sprintf('No "%s" fields exist', $field);
-            throw new InvalidArgumentException($message);
-        }
-
-        return $elements;
-    }
-
-    private function findOption($field, $option)
-    {
-        $elements = $this->findFields($field);
-
-        foreach ($elements as $element) {
-            if ($element->getAttribute('value') == $option) {
-                return $element;
-            }
-        }
-
-        $message = sprintf('The option "%s" within "%s" does not exist', $option, $field);
-        throw new InvalidArgumentException($message);
     }
 
     /**
