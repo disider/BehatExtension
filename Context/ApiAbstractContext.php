@@ -537,6 +537,28 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
         a::assertThat($field, a::stringContains($value));
     }
 
+    /**
+     * @Then /^the "([^"]*)" link property should equal "([^"]*)"$/
+     */
+    public function theLinkPropertyEquals($property, $expectedValue)
+    {
+        $expectedValue = urldecode($expectedValue);
+
+        $payload = $this->getResponsePayload();
+        $actualValue = $this->getProperty($payload, $property);
+        $actualValue = urldecode($actualValue);
+
+        $actualValue = is_bool($actualValue) ? ($actualValue ? "true" : "false") : $actualValue;
+
+        $expectedValue = $this->replacePlaceholders($expectedValue);
+
+        a::assertEquals(
+            $expectedValue,
+            $actualValue,
+            "Asserting the [$property] property in current scope equals [$expectedValue]: " . json_encode($payload)
+        );
+    }
+
     protected function buildClient()
     {
         $this->client = $this->get('test.client');
