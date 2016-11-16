@@ -6,6 +6,7 @@ use Behat\Behat\Event\BaseScenarioEvent;
 use Behat\Behat\Event\StepEvent;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
+use Behat\Mink\Driver\Selenium2Driver;
 use Behat\Mink\Element\NodeElement;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
@@ -89,7 +90,6 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         parent::visit($page);
     }
 
-
     /**
      * @When /^I visit "([^"]*)"$/
      */
@@ -97,10 +97,19 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $this->visit($page);
 
-        if ($this->getSession()->getStatusCode() != 200)
-            $this->printLastResponse();
+        if(!$this->isSeleniumDriver())
+        {
+            if ($this->getSession()->getStatusCode() != 200)
+                $this->printLastResponse();
 
-        $this->assertResponseStatus(200);
+            $this->assertResponseStatus(200);
+        }
+    }
+
+    private function isSeleniumDriver() {
+        $driver = $this->getSession()->getDriver();
+
+        return $driver instanceof Selenium2Driver;
     }
 
     /**
