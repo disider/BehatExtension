@@ -20,6 +20,7 @@ use Symfony\Component\DomCrawler\Crawler;
 abstract class AbstractContext extends MinkContext implements KernelAwareInterface, ServiceMockerAwareInterface
 {
     use ContextTrait;
+    use AuthContextTrait;
 
     /**
      * @var ConsoleOutput
@@ -29,8 +30,12 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     /** @var string */
     protected $filePath;
 
+    /** @var array */
+    private $parameters;
+
     public function __construct($parameters)
     {
+        $this->parameters = $parameters;
         $this->debug = isset($parameters['debug']) ? $parameters['debug'] : true;
     }
 
@@ -42,6 +47,14 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     public function getExpressionLanguage()
     {
         return new ExpressionLanguage();
+    }
+
+    /**
+     * @return array
+     */
+    public function getParameter($name)
+    {
+        return $this->parameters[$name];
     }
 
     /**
