@@ -51,6 +51,9 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
     private $payload;
 
     /** @var string */
+    private $resource;
+
+    /** @var string */
     private $accessToken;
 
 
@@ -168,6 +171,16 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
         $this->lastRequest = $this->client->getRequest();
         $this->response = $this->client->getResponse();
         $this->responsePayload = $this->getResponsePayload();
+    }
+
+    /**
+     * @When /^I request "(GET|PUT|POST|DELETE|PATCH) ([^"]*)" with payload:$/
+     */
+    public function iRequestWithPayload($httpMethod, $resource, PyStringNode $payload)
+    {
+        $this->payload = $payload;
+        $this->client->restart();
+        $this->iRequest($httpMethod, $resource);
     }
 
     /**
