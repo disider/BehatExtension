@@ -292,7 +292,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
                 $field = $this->formatField(sprintf('%s.%s', $form, $field));
                 $field = $this->replacePlaceholders($field);
 
-                $element = $this->findField($field);
+                $element = $this->getSession()->getPage()->findField($field);
 
                 if($element) {
                     $message = sprintf('An element matching "%s" appears on this page, but it should not.', $field);
