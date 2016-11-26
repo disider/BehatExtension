@@ -9,7 +9,7 @@ use Behat\Gherkin\Node\TableNode;
 use Behat\Mink\Element\NodeElement;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareContext;
-use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
+use InvalidArgumentException;
 use PHPUnit_Framework_Assert as a;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\DomCrawler\Crawler;
@@ -292,7 +292,12 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
                 $field = $this->formatField(sprintf('%s.%s', $form, $field));
                 $field = $this->replacePlaceholders($field);
 
-                $this->assertElementNotOnPage($field);
+                $element = $this->findField($field);
+
+                if($element) {
+                    $message = sprintf('An element matching "%s" appears on this page, but it should not.', $field);
+                    throw new InvalidArgumentException($message);
+                }
             }
         }
     }
