@@ -8,6 +8,7 @@ use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
 use Behat\Mink\Driver\Selenium2Driver;
 use Behat\Mink\Element\NodeElement;
+use Behat\Mink\Exception\ElementNotFoundException;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
 use Diside\BehatExtension\Helper\ExpressionLanguage;
@@ -252,6 +253,25 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         $link = $this->replacePlaceholders($link);
 
         $this->clickLink($link);
+    }
+
+    /**
+     * @When /^I click the (\d+)(st|nd|rd|th)? "([^"]*)"$/
+     */
+    public function iClickTheLinkInPosition($num, $p,  $link)
+    {
+        $link = $this->replacePlaceholders($link);
+
+        $link = $this->fixStepArgument($link);
+        $items = $this->getSession()->getPage()->findAll('named', array('link', $link));
+
+        if (count($items) < $num) {
+            throw new ElementNotFoundException($this->getSession()->getDriver(), 'link', 'id|title|alt|text', $link);
+        }
+
+        /** @var NodeElement $item */
+        $item = $items[$num - 1];
+        $item->click();
     }
 
     /**
