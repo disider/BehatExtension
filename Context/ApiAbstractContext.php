@@ -544,6 +544,17 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
     }
 
     /**
+     * @Given /^the "([^"]*)" entity property should not contain "([^"]*)"$/
+     */
+    public function theEntityPropertyShouldNotContain($field, $value)
+    {
+        $field = $this->replacePlaceholders($field);
+        $value = $this->replacePlaceholders($value);
+
+        a::assertThat($field, a::logicalNot(a::stringContains($value)));
+    }
+
+    /**
      * @Then /^the "([^"]*)" link property should equal "([^"]*)"$/
      */
     public function theLinkPropertyEquals($property, $expectedValue)
