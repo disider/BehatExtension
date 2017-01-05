@@ -52,7 +52,6 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
     /** @var string */
     private $accessToken;
 
-
     /**
      * @AfterScenario
      */
@@ -81,11 +80,13 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
                     if ($data === null) {
                         // invalid JSON!
                         $this->printDebug($body);
-                    } else {
+                    }
+                    else {
                         // valid JSON, print it pretty
                         $this->printDebug(json_encode($data, JSON_PRETTY_PRINT));
                     }
-                } else {
+                }
+                else {
                     // the response is HTML - see if we should print all of it or some of it
                     $isValidHtml = strpos($body, '</body>') !== false;
 
@@ -99,7 +100,8 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
                         foreach ($crawler->filter('h1, h2')->extract(array('_text')) as $header) {
                             $this->printDebug(sprintf('        ' . $header));
                         }
-                    } else {
+                    }
+                    else {
                         $this->printDebug($body);
                     }
                 }
@@ -152,18 +154,18 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
     public function iRequest($httpMethod, $resource)
     {
         $resource = $this->replacePlaceholders($resource);
-        if ($this->accessToken)
+        if ($this->accessToken) {
             $resource .= '?access_token=' . $this->accessToken;
+        }
         $this->resource = $resource;
 
         $method = strtolower($httpMethod);
 
         $payload = $this->replacePlaceholders($this->payload);
 
-        $this->client->request($method, $resource, array(), array(), array(
-            'HTTP_Accept' => 'application/json',
-            'HTTP_X-Requested-With' => 'XMLHttpRequest'
-        ), $payload);
+        $headers = $this->getRequestHeaders();
+
+        $this->client->request($method, $resource, array(), array(), $headers, $payload);
         $this->lastRequest = $this->client->getRequest();
         $this->response = $this->client->getResponse();
         $this->responsePayload = $this->getResponsePayload();
@@ -196,7 +198,8 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
         // looks for application/json or something like application/problem+json
         if (preg_match('#application\/(.)*\+?json#', $contentType)) {
             $bodyOutput = $response->getContent();
-        } else {
+        }
+        else {
             $bodyOutput = 'Output is "' . $contentType . '", which is not JSON and is therefore scary. Run the request manually.';
         }
 
@@ -279,7 +282,8 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
                     return false;
                 }
                 $payload = $payload->{$segment};
-            } elseif (is_array($payload)) {
+            }
+            elseif (is_array($payload)) {
                 if (!array_key_exists($segment, $payload)) {
                     return false;
                 }
@@ -310,14 +314,14 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
     {
         $payload = $this->getResponsePayload();
         $actualValue = $this->getProperty($payload, $property);
-        $actualValue = is_bool($actualValue) ? ($actualValue ? "true" : "false") : $actualValue;
+        $actualValue = is_bool($actualValue) ? ($actualValue ? 'true' : 'false') : $actualValue;
 
         $expectedValue = $this->replacePlaceholders($expectedValue);
 
         a::assertEquals(
             $expectedValue,
             $actualValue,
-            "Asserting the [$property] property in current scope equals [$expectedValue]: " . json_encode($payload)
+            sprintf('The "%s" property should equal "%s", found "%s" instead', $property, $expectedValue, json_encode($actualValue))
         );
     }
 
@@ -373,7 +377,8 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
                 }
 
                 $payload = $payload->{$key};
-            } elseif (is_array($payload)) {
+            }
+            elseif (is_array($payload)) {
                 if (!array_key_exists($key, $payload)) {
                     throw new \Exception(sprintf('Cannot find the property "%s"', $property));
                 }
@@ -460,7 +465,8 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
 
                 a::assertContains($value, $actualValue[$key]);
             }
-        } else {
+        }
+        else {
             foreach ($table->getRows() as $row) {
                 $value = $this->replacePlaceholders($row[0]);
 
@@ -570,4 +576,21 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
         return $this->kernel->getContainer();
     }
 
+    protected function getAccessToken()
+    {
+        return $this->accessToken;
+    }
+
+    protected function getPayload()
+    {
+        return $this->payload;
+    }
+
+    protected function getRequestHeaders()
+    {
+        return array(
+            'HTTP_Accept' => 'application/json',
+            'HTTP_X-Requested-With' => 'XMLHttpRequest'
+        );
+    }
 }

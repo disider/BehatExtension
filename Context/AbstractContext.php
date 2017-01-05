@@ -64,8 +64,33 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
 
                 // finds the h1 and h2 tags and prints them only
                 $crawler = new Crawler($body);
-                foreach ($crawler->filter('h1, h2, .alert')->extract(array('_text')) as $header) {
-                    $this->printDebug('        ' . $header);
+
+                /** @var \DOMElement $crawledNode */
+
+                $this->printSelector($crawler, 'h1');
+                $this->printSelector($crawler, 'h2');
+                $this->printSelector($crawler, '.alert');
+
+                /** @var \DOMElement $node */
+                foreach ($crawler->filter('.has-error') as $node) {
+                    $subCrawler = new Crawler($node);
+                    $items = $subCrawler->filter('label')->extract(['for']);
+                    $errors = $subCrawler->filter('ul li')->extract(['_text']);
+
+                    foreach($items as $i => $item) {
+                        $this->printDebug(sprintf('    <info>%s:</info> <error>%s</error>', $item, $errors[$i]));
+                        break;
+                    }
+                }
+
+                /** @var \DOMElement $node */
+                foreach ($crawler->filter('.help-block') as $node) {
+                    $subCrawler = new Crawler($node);
+                    $errors = $subCrawler->filter('li')->extract(['_text']);
+
+                    foreach($errors as $i => $error) {
+                        $this->printDebug(sprintf('    <info>Global error:</info> <error>%s</error>', $error));
+                    }
                 }
             } else {
                 $this->printDebug($body);
@@ -942,39 +967,10 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
         var_dump($this->getSession()->getPage()->find('css', $element)->getHtml());
     }
 
-    private function assertDetailExists($section, $values)
+    protected function printSelector($crawler, $selector)
     {
-        if (strpos($section, '.') !== false) {
-            $vars = explode('.', $section);
-            $xpath = sprintf(
-                '//*[contains(concat(" ", normalize-space(@class), " "), " %s ")][position()=%d]',
-                $vars[0],
-                $vars[1] + 1
-            );
-
-            $element = $this->getSession()->getPage()->find('xpath', $xpath);
-
-            if (null === $element) {
-                throw new \InvalidArgumentException(sprintf('Could not evaluate XPath: "%s"', $xpath));
-            }
-        } else {
-            $element = $this->assertSession()->elementExists('css', '.' . $section);
-        }
-
-        foreach ($values as $key => $value) {
-            $actual = $element->getHtml();
-            $html = $this->fixStepArgument($value);
-            $regex = '/' . preg_quote($html, '/') . '/ui';
-
-            if (!preg_match($regex, $actual)) {
-                $message = sprintf(
-                    'The string "%s" was not found in the "%s" HTML element (found "%s").',
-                    $value,
-                    $key,
-                    $html
-                );
-                throw new \InvalidArgumentException($message);
-            }
+        foreach ($crawler->filter($selector) as $header) {
+            $this->printDebug(sprintf('    <info>%s:</info> %s', $selector, trim($header->nodeValue)));
         }
     }
 
