@@ -6,7 +6,10 @@ use Behat\Behat\EventDispatcher\Event;
 use Behat\Behat\Hook\Scope\AfterScenarioScope;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
+use Behat\Mink\Driver\BrowserKitDriver;
 use Behat\Mink\Element\NodeElement;
+use Behat\Mink\Exception\ElementNotFoundException;
+use Behat\Mink\Session;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareContext;
 use InvalidArgumentException;
@@ -116,10 +119,17 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
     {
         $this->visit($page);
 
-        if ($this->getSession()->getStatusCode() != 200)
-            $this->printLastResponse();
+        /** @var Session $session */
+        $session = $this->getSession();
+        $driver = $session->getDriver();
 
-        $this->assertResponseStatus(200);
+        if ($driver instanceof BrowserKitDriver) {
+            if ($this->getSession()->getStatusCode() != 200) {
+                $this->printLastResponse();
+            }
+
+            $this->assertResponseStatus(200);
+        }
     }
 
     /**
@@ -265,6 +275,25 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
     }
 
     /**
+     * @When /^I click the (\d+)(st|nd|rd|th)? "([^"]*)" link$/
+     */
+    public function iClickTheLinkInPosition($num, $pos, $link)
+    {
+        $link = $this->replacePlaceholders($link);
+
+        $link = $this->fixStepArgument($link);
+        $items = $this->getSession()->getPage()->findAll('named', ['link', $link]);
+
+        if (count($items) < $num) {
+            throw new ElementNotFoundException($this->getSession()->getDriver(), 'link', 'id|title|alt|text', $link);
+        }
+
+        /** @var NodeElement $item */
+        $item = $items[$num - 1];
+        $item->click();
+    }
+
+    /**
      * @Then /^the page should contain$/
      */
     public function thePageContains(PyStringNode $text)
@@ -288,6 +317,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
     public function iShouldSeeTheFieldWith($field, $value)
     {
         $field = $this->replacePlaceholders($field);
+        $field = $this->formatField($field);
+
         $value = $this->replacePlaceholders($value);
 
         $this->assertFieldContains($field, $value);
@@ -324,6 +355,20 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
                     throw new InvalidArgumentException($message);
                 }
             }
+        }
+    }
+
+    /**
+     * @Then /^I should not see the "([^"]*)" fields values:$/
+     */
+    public function iShouldSeeNoFormFieldsValues($form, TableNode $table)
+    {
+        foreach ($table->getRowsHash() as $field => $value) {
+            $field = $this->formatField(sprintf('%s.%s', $form, $field));
+            $field = $this->replacePlaceholders($field);
+            $value = $this->replacePlaceholders($value);
+
+            $this->assertFieldNotContains($field, $value);
         }
     }
 
@@ -1184,6 +1229,6 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
      */
     protected function formatXpathLink($link)
     {
-        return sprintf('//a[contains(@href, "%1$s") or contains(@title, "%1$s") or descendant::text()[contains(., "%1$s")]]', $link);
+        return sprintf('//a[("%1$s" = substring(@href, string-length(@href) - string-length("%1$s") +1)) or contains(@title, "%1$s") or descendant::text()[contains(., "%1$s")]]', $link);
     }
 }
