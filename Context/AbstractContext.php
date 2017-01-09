@@ -1124,23 +1124,26 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
         }
     }
 
-    protected function assertRowElementContainsText($position, $row, $key, $value, NodeElement $actual)
+    protected function assertRowElementContainsText($position, $row, $key, $expected, NodeElement $nodeElement)
     {
-        $value = $this->fixStepArgument($value);
-        $value = $this->replacePlaceholders($value);
+        $expected = $this->fixStepArgument($expected);
+        $expected = $this->replacePlaceholders($expected);
+        $expected = html_entity_decode($expected);
 
-        $regex = '/' . preg_quote($value, '/') . '/ui';
+        $regex = '/' . preg_quote($expected, '/') . '/ui';
+
+        $actual = trim($nodeElement->getHtml());
 
         $message = sprintf(
             'The string "%s" was not found in the HTML of the row "%d" matching ".%s .%s", found "%s"',
-            $value,
+            $expected,
             $position,
             $row,
             $key,
-            $actual->getHtml()
+            $actual
         );
 
-        if (!preg_match($regex, $actual->getHtml())) {
+        if (!preg_match($regex, $actual)) {
             throw new \InvalidArgumentException($message);
         }
 
