@@ -51,6 +51,9 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
     private $payload;
 
     /** @var string */
+    private $resource;
+
+    /** @var string */
     private $accessToken;
 
 
@@ -161,10 +164,23 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
 
         $payload = $this->replacePlaceholders($this->payload);
 
-        $this->client->request($method, $resource, array(), array(), array('HTTP_X-Requested-With' => 'XMLHttpRequest'), $payload);
+        $this->client->request($method, $resource, array(), array(), array(
+            'HTTP_Accept' => 'application/json',
+            'HTTP_X-Requested-With' => 'XMLHttpRequest'
+        ), $payload);
         $this->lastRequest = $this->client->getRequest();
         $this->response = $this->client->getResponse();
         $this->responsePayload = $this->getResponsePayload();
+    }
+
+    /**
+     * @When /^I request "(GET|PUT|POST|DELETE|PATCH) ([^"]*)" with payload:$/
+     */
+    public function iRequestWithPayload($httpMethod, $resource, PyStringNode $payload)
+    {
+        $this->payload = $payload;
+        $this->client->restart();
+        $this->iRequest($httpMethod, $resource);
     }
 
     /**
@@ -219,7 +235,31 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
     public function printLastResponse()
     {
         if ($this->response) {
-            $this->printDebug((string)$this->response);
+            $body = $this->getResponse()->getContent();
+
+            $this->printDebug(
+                "\n" .
+                sprintf(
+                    '%s: %s',
+                    $this->lastRequest->getMethod(),
+                    $this->lastRequest->getUri()
+                ) .
+                "\n"
+            );
+
+            $this->printDebug((string)$this->response->headers);
+
+            if ($this->response->headers->get('Content-Type') == 'application/json' ||
+                $this->response->headers->get('Content-Type') == 'application/problem+json') {
+                $data = json_decode($body);
+                if ($data === null) {
+                    // invalid JSON!
+                    $this->printDebug($body);
+                } else {
+                    // valid JSON, print it pretty
+                    $this->printDebug(json_encode($data, JSON_PRETTY_PRINT));
+                }
+            }
         }
     }
 
@@ -308,6 +348,29 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
     {
         $payload = $this->getResponsePayload();
         $actualValue = $this->getProperty($payload, $property);
+
+        $actualValue = is_bool($actualValue) ? ($actualValue ? "true" : "false") : $actualValue;
+
+        $expectedValue = $this->replacePlaceholders($expectedValue);
+
+        a::assertEquals(
+            $expectedValue,
+            $actualValue,
+            "Asserting the [$property] property in current scope equals [$expectedValue]: " . json_encode($payload)
+        );
+    }
+
+    /**
+     * @Then /^the "([^"]*)" link property should equal "([^"]*)"$/
+     */
+    public function theLinkPropertyEquals($property, $expectedValue)
+    {
+        $expectedValue = urldecode($expectedValue);
+
+        $payload = $this->getResponsePayload();
+        $actualValue = $this->getProperty($payload, $property);
+        $actualValue = urldecode($actualValue);
+
         $actualValue = is_bool($actualValue) ? ($actualValue ? "true" : "false") : $actualValue;
 
         $expectedValue = $this->replacePlaceholders($expectedValue);
@@ -390,6 +453,8 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
     {
         $payload = $this->getResponsePayload();
         $actualValue = $this->getProperty($payload, $property);
+
+        $expectedValue = $this->replacePlaceholders($expectedValue);
 
         a::assertContains(
             $expectedValue,
@@ -533,7 +598,7 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
         a::assertThat($field, a::stringContains($value));
     }
 
-    protected function buildClient($baseUrl)
+    protected function buildClient()
     {
         $this->client = $this->get('test.client');
     }

@@ -56,7 +56,6 @@ class EntityLookup
                     )
                 );
             }
-
         } else {
             if (!is_null($this->relation)) {
                 $obj = $this->repository->createQueryBuilder('q')

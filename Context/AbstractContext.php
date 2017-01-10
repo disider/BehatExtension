@@ -6,19 +6,22 @@ use Behat\Behat\Event\BaseScenarioEvent;
 use Behat\Behat\Event\StepEvent;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
+use Behat\Mink\Driver\Selenium2Driver;
 use Behat\Mink\Element\NodeElement;
+use Behat\Mink\Exception\ElementNotFoundException;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareInterface;
+use Diside\BehatExtension\Helper\ExpressionLanguage;
 use Doctrine\Common\Proxy\Exception\InvalidArgumentException;
 use PHPUnit_Framework_Assert as a;
 use PSS\Behat\Symfony2MockerExtension\Context\ServiceMockerAwareInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\DomCrawler\Crawler;
-use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 abstract class AbstractContext extends MinkContext implements KernelAwareInterface, ServiceMockerAwareInterface
 {
     use ContextTrait;
+    use AuthContextTrait;
 
     /**
      * @var ConsoleOutput
@@ -28,8 +31,12 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     /** @var string */
     protected $filePath;
 
+    /** @var array */
+    private $parameters;
+
     public function __construct($parameters)
     {
+        $this->parameters = $parameters;
         $this->debug = isset($parameters['debug']) ? $parameters['debug'] : true;
     }
 
@@ -41,6 +48,14 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     public function getExpressionLanguage()
     {
         return new ExpressionLanguage();
+    }
+
+    /**
+     * @return array
+     */
+    public function getParameter($name)
+    {
+        return $this->parameters[$name];
     }
 
     /**
@@ -89,7 +104,6 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         parent::visit($page);
     }
 
-
     /**
      * @When /^I visit "([^"]*)"$/
      */
@@ -97,10 +111,19 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $this->visit($page);
 
-        if ($this->getSession()->getStatusCode() != 200)
-            $this->printLastResponse();
+        if(!$this->isSeleniumDriver())
+        {
+            if ($this->getSession()->getStatusCode() != 200)
+                $this->printLastResponse();
 
-        $this->assertResponseStatus(200);
+            $this->assertResponseStatus(200);
+        }
+    }
+
+    private function isSeleniumDriver() {
+        $driver = $this->getSession()->getDriver();
+
+        return $driver instanceof Selenium2Driver;
     }
 
     /**
@@ -246,6 +269,25 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     }
 
     /**
+     * @When /^I click the (\d+)(st|nd|rd|th)? "([^"]*)"$/
+     */
+    public function iClickTheLinkInPosition($num, $p,  $link)
+    {
+        $link = $this->replacePlaceholders($link);
+
+        $link = $this->fixStepArgument($link);
+        $items = $this->getSession()->getPage()->findAll('named', array('link', $link));
+
+        if (count($items) < $num) {
+            throw new ElementNotFoundException($this->getSession()->getDriver(), 'link', 'id|title|alt|text', $link);
+        }
+
+        /** @var NodeElement $item */
+        $item = $items[$num - 1];
+        $item->click();
+    }
+
+    /**
      * @Then /^the page should contain$/
      */
     public function thePageContains(PyStringNode $text)
@@ -268,6 +310,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iShouldSeeTheFieldWith($field, $value)
     {
+        $field = $this->formatField($field);
+
         $field = $this->replacePlaceholders($field);
         $value = $this->replacePlaceholders($value);
 
@@ -285,6 +329,20 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
             $value = $this->replacePlaceholders($value);
 
             $this->assertFieldContains($field, $value);
+        }
+    }
+
+    /**
+     * @Then /^I should not see the "([^"]*)" fields values:$/
+     */
+    public function iShouldSeeNoFormFieldsValues($form, TableNode $table)
+    {
+        foreach ($table->getRowsHash() as $field => $value) {
+            $field = $this->formatField(sprintf('%s.%s', $form, $field));
+            $field = $this->replacePlaceholders($field);
+            $value = $this->replacePlaceholders($value);
+
+            $this->assertFieldNotContains($field, $value);
         }
     }
 
@@ -518,6 +576,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iCanClickOn($linkOrButton)
     {
+        $linkOrButton = $this->replacePlaceholders($linkOrButton);
+
         $this->assertSession()->elementExists(
             'named',
             array(
@@ -716,14 +776,14 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     /**
      * @Then /^I should see the "([^"]*)" option "([^"]*)"$/
      */
-    public function iSeeTheOption($field, $option)
+    public function iSeeTheOption($select, $option)
     {
         $option = $this->replacePlaceholders($option);
 
-        $element = $this->findOption($field, $option);
+        $element = $this->findOptionElement($select, $option);
 
         if (!$element) {
-            $message = sprintf('There is no option "%s" within "%s".', $option, $field);
+            $message = sprintf('There is no option "%s" within "%s".', $option, $select);
             throw new InvalidArgumentException($message);
         }
     }
@@ -734,9 +794,8 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     public function iSeeNoOption($select, $option)
     {
         $this->assertSelect($select);
-        $selectElement = $this->findSelect($select);
 
-        $optionElement = $selectElement->find('named', array('option', $option));
+        $optionElement = $this->findOptionElement($select, $option);
 
         if ($optionElement != null) {
             $message = sprintf('There is an option "%s" within "%s", but it should not.', $option, $select);
@@ -749,7 +808,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iSeeTheOptionStatus($field, $option, $status)
     {
-        $element = $this->findOption($field, $option);
+        $element = $this->findOptionElement($field, $option);
 
         if (!$element->hasAttribute($status)) {
             $message = sprintf('The option "%s" within "%s" has no attribute "%s"', $option, $field, $status);
@@ -762,7 +821,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iSeeNoOptionStatus($field, $option, $status)
     {
-        $element = $this->findOption($field, $option);
+        $element = $this->findOptionElement($field, $option);
 
         if ($element->hasAttribute($status)) {
             $message = sprintf(
@@ -780,7 +839,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
      */
     public function iCanSelectTheOption($field, $option)
     {
-        $this->findOption($field, $option);
+        $this->findOptionElement($field, $option);
     }
 
     /**
@@ -952,6 +1011,18 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         var_dump($this->getSession()->getPage()->find('css', $element)->getHtml());
     }
 
+    /**
+     * @param $select
+     * @param $option
+     * @return null
+     */
+    protected function findOptionElement($select, $option)
+    {
+        $selectElement = $this->findSelect($select);
+
+        return $selectElement->find('named', array('option', $option));
+    }
+
     private function assertDetailExists($section, $values)
     {
         if (strpos($section, '.') !== false) {
@@ -1035,24 +1106,22 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $option = $this->getXpathLiteral($this->replacePlaceholders($option));
 
-        $selectElement = $this->findSelect($select);
-        $optionElement = $selectElement->find('named', array('option', $option));
+        $element = $this->findOptionElement($select, $option);
 
-        a::assertNotNull($optionElement, sprintf('Option %s does not exist in select %s', $option, $select));
-        a::assertTrue($optionElement->hasAttribute("selected"), sprintf('Option %s is not selected in select %s', $option, $select));
-        a::assertTrue($optionElement->getAttribute("selected") == "selected", sprintf('Option %s is not selected in select %s', $option, $select));
+        a::assertNotNull($element, sprintf('Option %s does not exist in select %s', $option, $select));
+        a::assertTrue($element->hasAttribute("selected"), sprintf('Option %s is not selected in select %s', $option, $select));
+        a::assertTrue($element->getAttribute("selected") == "selected", sprintf('Option %s is not selected in select %s', $option, $select));
     }
 
     protected function assertOptionNotSelected($select, $option)
     {
         $option = $this->getXpathLiteral($this->replacePlaceholders($option));
 
-        $selectElement = $this->findSelect($select);
-        $optionElement = $selectElement->find('named', array('option', $option));
+        $element = $this->findOptionElement($select, $option);
 
-        a::assertNotNull($optionElement, sprintf('Option %s does not exist in select %s', $option, $select));
-        a::assertFalse($optionElement->hasAttribute("selected"));
-        a::assertFalse($optionElement->getAttribute("selected") == "selected");
+        a::assertNotNull($element, sprintf('Option %s does not exist in select %s', $option, $select));
+        a::assertFalse($element->hasAttribute("selected"));
+        a::assertFalse($element->getAttribute("selected") == "selected");
     }
 
     protected function findElementInRow($row, $xpath, $i)
@@ -1097,6 +1166,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
     {
         $value = $this->fixStepArgument($value);
         $value = $this->replacePlaceholders($value);
+        $value = html_entity_decode($value);
 
         $regex = '/' . preg_quote($value, '/') . '/ui';
 
@@ -1146,6 +1216,11 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
             $selectElement = $page->find('named', array('select', $this->getXpathLiteral($select . '[]')));
         }
 
+        if (!$selectElement) {
+            $message = sprintf('The field "%s" does not exist', $select);
+            throw new InvalidArgumentException($message);
+        }
+
         return $selectElement;
     }
 
@@ -1163,41 +1238,13 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         return $element;
     }
 
-    private function findFields($field, $type = 'field')
-    {
-        $field = $this->formatField($field);
-
-        $elements = $this->getSession()->getPage()->findAll('named', array($type, $field));
-
-        if (count($elements) == 0) {
-            $message = sprintf('No "%s" fields exist', $field);
-            throw new InvalidArgumentException($message);
-        }
-
-        return $elements;
-    }
-
-    private function findOption($field, $option)
-    {
-        $elements = $this->findFields($field);
-
-        foreach ($elements as $element) {
-            if ($element->getAttribute('value') == $option) {
-                return $element;
-            }
-        }
-
-        $message = sprintf('The option "%s" within "%s" does not exist', $option, $field);
-        throw new InvalidArgumentException($message);
-    }
-
     /**
      * @param $link
      * @return string
      */
     protected function formatXpathLink($link)
     {
-        return sprintf('//a[contains(@href, "%1$s") or contains(@title, "%1$s") or descendant::text()[contains(., "%1$s")]]', $link);
+        return sprintf('//a[("%1$s" = substring(@href, string-length(@href) - string-length("%1$s") +1)) or contains(@title, "%1$s") or descendant::text()[contains(., "%1$s")]]', $link);
     }
 
     private function getXpathLiteral($string)
