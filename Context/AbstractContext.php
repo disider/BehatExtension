@@ -910,7 +910,18 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
         $field = $this->replacePlaceholders($field);
         $value = $this->replacePlaceholders($value);
 
-        a::assertThat($field, a::stringContains($value));
+        a::assertContains($value, $field);
+    }
+
+    /**
+     * @Given /^the "([^"]*)" entity property should not contain "([^"]*)"$/
+     */
+    public function theEntityPropertyShouldNotContain($field, $value)
+    {
+        $field = $this->replacePlaceholders($field);
+        $value = $this->replacePlaceholders($value);
+
+        a::assertNotContains($value, $field);
     }
 
     /**
