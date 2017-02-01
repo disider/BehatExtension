@@ -766,6 +766,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
 
                 $select = $this->fixStepArgument($select);
                 $option = $this->fixStepArgument($option);
+
                 $this->getSession()->getPage()->selectFieldOption($select, $option, true);
             }
         }
@@ -1010,6 +1011,43 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
     public function iDumpElement($element)
     {
         var_dump($this->getSession()->getPage()->find('css', $element)->getHtml());
+    }
+
+
+    /**
+     * @Then /^I should see the "([^"]*)" radio "([^"]*)"$/
+     * @Then /^I should see the "([^"]*)" checkbox "([^"]*)"$/
+     */
+    public function iSeeTheRadio($field, $radio)
+    {
+        $radio = $this->replacePlaceholders($radio);
+
+        $element = $this->findOption($field, $radio);
+
+        if (!$element) {
+            $message = sprintf('There is no option "%s" within "%s".', $radio, $field);
+            throw new InvalidArgumentException($message);
+        }
+    }
+
+    /**
+     * @Then /^I should not see the "([^"]*)" radio "([^"]*)"$/
+     * @Then /^I should not see the "([^"]*)" checkbox "([^"]*)"$/
+     */
+    public function iSeeNoRadio($field, $radio)
+    {
+        $radio = $this->replacePlaceholders($radio);
+
+        try {
+            $element = $this->findOption($field, $radio);
+        } catch (InvalidArgumentException $e) {
+            $element = null;
+        }
+
+        if ($element) {
+            $message = sprintf('There is an option "%s" within "%s", but it should not.', $radio, $field);
+            throw new InvalidArgumentException($message);
+        }
     }
 
     protected function printSelector($crawler, $selector)
