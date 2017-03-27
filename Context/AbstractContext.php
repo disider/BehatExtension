@@ -22,6 +22,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareInterfa
 {
     use ContextTrait;
     use AuthContextTrait;
+    use EntityContextTrait;
 
     /**
      * @var ConsoleOutput

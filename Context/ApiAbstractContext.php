@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
 abstract class ApiAbstractContext extends BehatContext implements KernelAwareInterface
 {
     use ContextTrait;
+    use EntityContextTrait;
 
     /** @var Client */
     protected $client;
@@ -570,32 +571,6 @@ abstract class ApiAbstractContext extends BehatContext implements KernelAwareInt
             sprintf('_embedded.%s.%s', $embeddedName, $property),
             $value
         );
-    }
-
-    /**
-     * @Then /^the "([^"]*)" entity property should be "([^"]*)"$/
-     */
-    public function theEntityPropertyShouldBe($field, $value)
-    {
-        $field = $this->replacePlaceholders($field);
-        $value = $this->replacePlaceholders($value);
-
-        if (in_array($value, array('true', 'false'))) {
-            $value = $value == 'true';
-        }
-
-        a::assertThat($field, a::equalTo($value));
-    }
-
-    /**
-     * @Given /^the "([^"]*)" entity property should contain "([^"]*)"$/
-     */
-    public function theEntityPropertyShouldContain($field, $value)
-    {
-        $field = $this->replacePlaceholders($field);
-        $value = $this->replacePlaceholders($value);
-
-        a::assertThat($field, a::stringContains($value));
     }
 
     protected function buildClient()
