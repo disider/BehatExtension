@@ -118,7 +118,7 @@ trait ContextTrait
                 throw $e;
             }
 
-            if(is_array($evaluated)) {
+            if (is_array($evaluated)) {
                 $evaluated = implode(';', $evaluated);
             }
 
