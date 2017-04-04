@@ -20,15 +20,24 @@ trait EmailContextTrait
             ->shouldHaveReceived('send')
             ->with(\Mockery::on(
                 function (Swift_Mime_Message $message) use (&$index, &$values) {
-                    if (isset($values[$index]['email']) && !empty($values[$index]['email'])) {
-                        $expectedEmail = $values[$index]['email'];
-                        $emails = $message->getTo();
-                        phpunit::assertArrayHasKey($expectedEmail, $emails, sprintf(
+                    if (isset($values[$index]['to']) && !empty($values[$index]['to'])) {
+                        $expectedTo = $values[$index]['to'];
+                        $to = $message->getTo();
+                        phpunit::assertArrayHasKey($expectedTo, $to, sprintf(
                             'Email "%s" not found in list ["%s"]',
-                            $expectedEmail, implode(', ', array_keys($emails))
+                            $expectedTo, implode(', ', array_keys($to))
                         ));
                     } else {
                         phpunit::fail('Expected emails are less than the sent ones');
+                    }
+
+                    if (isset($values[$index]['cc']) && !empty($values[$index]['cc'])) {
+                        $expectedCc = $values[$index]['cc'];
+                        $cc = $message->getCc();
+                        phpunit::assertArrayHasKey($expectedCc, $cc, sprintf(
+                            'CC "%s" not found in list ["%s"]',
+                            $expectedCc, implode(', ', array_keys($cc))
+                        ));
                     }
 
                     if (isset($values[$index]['subject']) && !empty($values[$index]['subject'])) {
