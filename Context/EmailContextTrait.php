@@ -21,7 +21,7 @@ trait EmailContextTrait
             ->with(\Mockery::on(
                 function (Swift_Mime_Message $message) use (&$index, &$values) {
                     if (isset($values[$index]['to']) && !empty($values[$index]['to'])) {
-                        $expectedTo = $values[$index]['to'];
+                        $expectedTo = $this->replacePlaceholders($values[$index]['to']);
                         $to = $message->getTo();
                         phpunit::assertArrayHasKey($expectedTo, $to, sprintf(
                             'Email "%s" not found in list ["%s"]',
@@ -32,7 +32,7 @@ trait EmailContextTrait
                     }
 
                     if (isset($values[$index]['cc']) && !empty($values[$index]['cc'])) {
-                        $expectedCc = $values[$index]['cc'];
+                        $expectedCc = $this->replacePlaceholders($values[$index]['cc']);
                         $cc = $message->getCc();
                         phpunit::assertArrayHasKey($expectedCc, $cc, sprintf(
                             'CC "%s" not found in list ["%s"]',
