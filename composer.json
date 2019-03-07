@@ -1,5 +1,5 @@
 {
-    "name": "diside/behat-extension",
+    "name": "disider/behat-extension",
     "description": "Behat extension to provide basic actions",
     "keywords": ["Behat"],
     "type": "behat-extension",
@@ -11,9 +11,9 @@
         }
     ],
     "require": {
-        "php": ">=5.3.0",
-        "nelmio/alice": "~2.1.4",
-        "doctrine/doctrine-bundle": "~1.4"
+        "php": "^5.6 || ^7.0",
+        "nelmio/alice": "^2.3",
+        "doctrine/doctrine-bundle": "^1.10"
     },
     "autoload": {
         "psr-0": { "Diside\\BehatExtension": "" }
