@@ -3,7 +3,6 @@
 namespace Diside\BehatExtension\Context;
 
 use Doctrine\ORM\EntityRepository;
-use PSS\Behat\Symfony2MockerExtension\ServiceMocker;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Component\ExpressionLanguage\SyntaxError;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -13,9 +12,6 @@ trait ContextTrait
     /** @var KernelInterface */
     protected $kernel;
 
-    /** @var ServiceMocker */
-    protected $mocker = null;
-
     /**
      * @var string
      */
@@ -24,11 +20,6 @@ trait ContextTrait
     protected function setContextPath($path)
     {
         $this->contextPath = $path;
-    }
-
-    public function setServiceMocker(ServiceMocker $mocker)
-    {
-        $this->mocker = $mocker;
     }
 
     protected function getContainer()

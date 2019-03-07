@@ -7,7 +7,7 @@ use Behat\Behat\Hook\Scope\AfterScenarioScope;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
 use Behat\Symfony2Extension\Context\KernelAwareContext;
-use PHPUnit_Framework_Assert as a;
+use PHPUnit\Framework\Assert as a;
 use Symfony\Component\BrowserKit\Client;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -112,6 +112,7 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
     /**
      * Checks the response exists and returns it.
      *
+     * @throws \Exception
      * @return Response
      */
     protected function getResponse()
@@ -328,6 +329,7 @@ abstract class ApiAbstractContext implements Context, KernelAwareContext
     /**
      * Return the response payload from the current response.
      *
+     * @throws \Exception
      * @return  mixed
      */
     protected function getResponsePayload()

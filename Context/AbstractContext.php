@@ -2,7 +2,6 @@
 
 namespace Diside\BehatExtension\Context;
 
-use Behat\Behat\EventDispatcher\Event;
 use Behat\Behat\Hook\Scope\AfterScenarioScope;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
@@ -13,7 +12,7 @@ use Behat\Mink\Session;
 use Behat\MinkExtension\Context\MinkContext;
 use Behat\Symfony2Extension\Context\KernelAwareContext;
 use InvalidArgumentException;
-use PHPUnit_Framework_Assert as a;
+use PHPUnit\Framework\Assert as a;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
@@ -80,7 +79,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
                     $items = $subCrawler->filter('label')->extract(['for']);
                     $errors = $subCrawler->filter('ul li')->extract(['_text']);
 
-                    foreach($items as $i => $item) {
+                    foreach ($items as $i => $item) {
                         $this->printDebug(sprintf('    <info>%s:</info> <error>%s</error>', $item, $errors[$i]));
                         break;
                     }
@@ -91,7 +90,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
                     $subCrawler = new Crawler($node);
                     $errors = $subCrawler->filter('li')->extract(['_text']);
 
-                    foreach($errors as $i => $error) {
+                    foreach ($errors as $i => $error) {
                         $this->printDebug(sprintf('    <info>Global error:</info> <error>%s</error>', $error));
                     }
                 }
@@ -110,7 +109,6 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
 
         parent::visit($page);
     }
-
 
     /**
      * @When I visit :page
@@ -350,7 +348,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
 
                 $element = $this->getSession()->getPage()->findField($field);
 
-                if($element) {
+                if ($element) {
                     $message = sprintf('An element matching "%s" appears on this page, but it should not.', $field);
                     throw new InvalidArgumentException($message);
                 }
@@ -739,7 +737,6 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
         $this->getSession()->getPage()->selectFieldOption($element, $value);
     }
 
-
     /**
      * @Given /^I select the "([^"]*)" option "([^"]*)"$/
      */
@@ -758,7 +755,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
      */
     public function iSelectTheOptions($field, TableNode $table)
     {
-        $select = $this->formatField($field) . '[]';
+        $select = $this->formatField($field).'[]';
 
         foreach ($table->getRows() as $options) {
             foreach ($options as $option) {
@@ -810,7 +807,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
 
         $optionElement = $selectElement->find('named', array('option', $option));
 
-        if($optionElement != null) {
+        if ($optionElement != null) {
             $message = sprintf('There is an option "%s" within "%s", but it should not.', $option, $select);
             throw new InvalidArgumentException($message);
         }
@@ -881,7 +878,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
             );
         }
 
-        $filePath = $this->filePath . DIRECTORY_SEPARATOR . $fileName;
+        $filePath = $this->filePath.DIRECTORY_SEPARATOR.$fileName;
         if (!is_file($filePath)) {
             throw new InvalidArgumentException(sprintf('File not found in %s', $filePath));
         }
@@ -956,7 +953,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
      */
     public function iSeeElements($number, $class)
     {
-        $this->assertNumElements($number, '.' . $class);
+        $this->assertNumElements($number, '.'.$class);
     }
 
     /**
@@ -1012,7 +1009,6 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
     {
         var_dump($this->getSession()->getPage()->find('css', $element)->getHtml());
     }
-
 
     /**
      * @Then /^I should see the "([^"]*)" radio "([^"]*)"$/
@@ -1088,7 +1084,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
         array_shift($vars);
 
         foreach ($vars as $var) {
-            $field .= '[' . $var . ']';
+            $field .= '['.$var.']';
         }
 
         return $field;
@@ -1108,8 +1104,14 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
         $optionElement = $selectElement->find('named', array('option', $option));
 
         a::assertNotNull($optionElement, sprintf('Option %s does not exist in select %s', $option, $select));
-        a::assertTrue($optionElement->hasAttribute("selected"), sprintf('Option %s is not selected in select %s', $option, $select));
-        a::assertTrue($optionElement->getAttribute("selected") == "selected", sprintf('Option %s is not selected in select %s', $option, $select));
+        a::assertTrue(
+            $optionElement->hasAttribute("selected"),
+            sprintf('Option %s is not selected in select %s', $option, $select)
+        );
+        a::assertTrue(
+            $optionElement->getAttribute("selected") == "selected",
+            sprintf('Option %s is not selected in select %s', $option, $select)
+        );
     }
 
     protected function assertOptionNotSelected($select, $option)
@@ -1137,7 +1139,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
 
     protected function findElementInRowByClass($row, NodeElement $element, $key)
     {
-        $actual = $element->find('css', '.' . $key);
+        $actual = $element->find('css', '.'.$key);
         $message = sprintf(
             'The element ".%s" was not found in ".%s".',
             $key,
@@ -1150,7 +1152,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
 
     protected function assertElementInRowByClassDoesNotExist($row, NodeElement $element, $key)
     {
-        $actual = $element->find('css', '.' . $key);
+        $actual = $element->find('css', '.'.$key);
         $message = sprintf(
             'The element ".%s" was found in ".%s", but it should not exist.',
             $key,
@@ -1168,7 +1170,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
         $expected = $this->replacePlaceholders($expected);
         $expected = html_entity_decode($expected);
 
-        $regex = '/' . preg_quote($expected, '/') . '/ui';
+        $regex = '/'.preg_quote($expected, '/').'/ui';
 
         $actual = trim($nodeElement->getHtml());
 
@@ -1192,7 +1194,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
     {
         $element = $this->assertSession()->elementExists($selectorType, $selector);
         $actual = $element->getHtml();
-        $regex = '/' . preg_quote($value, '/') . '/ui';
+        $regex = '/'.preg_quote($value, '/').'/ui';
 
         if (!preg_match($regex, $actual)) {
             $message = sprintf(
@@ -1216,7 +1218,7 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
         $selectElement = $page->find('named', array('select', $select));
 
         if (!$selectElement) {
-            $selectElement = $page->find('named', array('select', $select . '[]'));
+            $selectElement = $page->find('named', array('select', $select.'[]'));
         }
 
         return $selectElement;
@@ -1264,12 +1266,11 @@ abstract class AbstractContext extends MinkContext implements KernelAwareContext
         throw new InvalidArgumentException($message);
     }
 
-    /**
-     * @param $link
-     * @return string
-     */
     protected function formatXpathLink($link)
     {
-        return sprintf('//a[("%1$s" = substring(@href, string-length(@href) - string-length("%1$s") +1)) or contains(@title, "%1$s") or descendant::text()[contains(., "%1$s")]]', $link);
+        return sprintf(
+            '//a[("%1$s" = substring(@href, string-length(@href) - string-length("%1$s") +1)) or contains(@title, "%1$s") or descendant::text()[contains(., "%1$s")]]',
+            $link
+        );
     }
 }
